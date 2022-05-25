@@ -366,8 +366,10 @@ class ModelComparison:
             ** History of objective evaluations ['obj_value']
             ** Number of iterations ['iter']
 
-        Also store optimal layout in a tuple flowers_layout, where
-        layout_x = flowers_layout[0] and layout_y = flowers_layout[1]
+        Also stores:
+            ** Optimal layout in a tuple flowers_layout, where
+                layout_x = flowers_layout[0] and layout_y = flowers_layout[1]
+            ** Optimal AEP computed with FLORIS, aep_flowers
 
         Args:
             model (layout:LayoutOptimization): FLOWERS optimization model
@@ -379,6 +381,11 @@ class ModelComparison:
         # Store optimal layout
         xx, yy = model.get_optimal_layout(sol)
         self.flowers_layout = (xx,yy)
+
+        # Store optimal AEP
+        self.reinitialize_floris()
+        self.floris.reinitialize(layout=(self.flowers_layout[0].flatten(),self.flowers_layout[1].flatten()))
+        self.aep_flowers = self.floris.get_farm_AEP(freq=self.freq_floris)
 
         # Store optimization performance
         self.flowers_performance = dict()
@@ -419,6 +426,11 @@ class ModelComparison:
         # Store optimal layout
         xx, yy = model.get_optimal_layout(sol)
         self.floris_layout = (xx,yy)
+
+        # Store optimal AEP
+        self.reinitialize_floris()
+        self.floris.reinitialize(layout=(self.floris_layout[0].flatten(),self.floris_layout[1].flatten()))
+        self.aep_floris = self.floris.get_farm_AEP(freq=self.freq_floris)
 
         # Store optimization performance
         self.floris_performance = dict()
@@ -487,12 +499,8 @@ class ModelComparison:
 
         Returns: Optimization results printed to terminal
         """
-
         # Reinitialize FLORIS interface and compute AEP of optimal solutions
         self.reinitialize_floris()
-
-        self.floris.reinitialize(layout=(self.flowers_layout[0].flatten(),self.flowers_layout[1].flatten()))
-        self.aep_flowers = self.floris.get_farm_AEP(freq=self.freq_floris)
 
         self.floris.reinitialize(layout=(self.floris_layout[0].flatten(),self.floris_layout[1].flatten()))
         self.aep_floris = self.floris.get_farm_AEP(freq=self.freq_floris)
@@ -521,9 +529,28 @@ class ModelComparison:
         
         print("============================")
     
-    def plot_flowers_layout(self, ax):
-        """Plot initial and FLOWERS optimal layouts on specified axes"""
+    def show_flowers_solution(self, stats=False):
+        """Print quantities of interest of FLOWERS optimization"""
+        print("============================")
+        print('    Optimization Results    ')
+        print('    FLOWERS Terms: {:.0f}'.format(self.terms_flowers))
+        print("----------------------------")
+        print("Initial AEP:      {:.3f} GWh".format(self.aep_initial / 1.0e9))
+        print("Optimal AEP:      {:.3f} GWh".format(self.aep_flowers / 1.0e9))
+        print("FLOWERS AEP Gain:      {:.2f}%".format((self.aep_flowers - self.aep_initial) / self.aep_initial * 100))
 
+        if stats:
+            print("----------------------------")
+            print("FLOWERS Time:         {:.1f} s".format(self.flowers_performance['time']))
+            print("FLOWERS AEP Evaluations:  {:.0f}".format(self.flowers_performance['obj_calls']))
+            print("FLOWERS Iterations:       {:.0f}".format(self.flowers_performance['iter']))
+        
+        print("============================")
+
+    def plot_flowers_layout(self, ax=None):
+        """Plot initial and FLOWERS optimal layouts on specified axes"""
+        if ax is None:
+            _, ax = plt.subplots(1,1)
         vis.plot_optimal_layout(ax, self.boundaries, self.flowers_layout[0], self.flowers_layout[1], self.layout_x, self.layout_y)
         return ax
     

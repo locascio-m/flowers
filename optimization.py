@@ -27,11 +27,11 @@ The results are saved in the ModelComparison() object for post-processing.
 wind_rose = tl.load_wind_rose(1)
 
 # Wind farm boundaries
-# boundaries = [(0.0, 0.0), (0.0, 2000.0), (1600.0, 1600.0), (2000.0, 0.0), (0.0, 0.0)]
-boundaries = [(0.0, 0.0), (0.0, 1000.0), (800.0, 800.0), (1000.0, 0.0), (0.0, 0.0)]
+boundaries = [(0.0, 0.0), (0.0, 2000.0), (1600.0, 1600.0), (2000.0, 0.0), (0.0, 0.0)]
+# boundaries = [(0.0, 0.0), (0.0, 1000.0), (800.0, 800.0), (1000.0, 0.0), (0.0, 0.0)]
 
 # Wind farm layout
-layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=2)
+layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=25)
 
 # Initialize optimization comparison
 geo = flow.ModelComparison(wind_rose, layout_x, layout_y)
@@ -44,17 +44,20 @@ sol = tmp.optimize()
 geo.save_flowers_solution(model,sol)
 
 # FLORIS optimization
-model = opt.layout.Layout(fli, boundaries, freq=geo.freq_floris)
-tmp = opt.optimization.Optimization(model=model, solver='SLSQP')
-sol = tmp.optimize()
-geo.save_floris_solution(model,sol)
+# model = opt.layout.Layout(fli, boundaries, freq=geo.freq_floris)
+# tmp = opt.optimization.Optimization(model=model, solver='SLSQP')
+# sol = tmp.optimize()
+# geo.save_floris_solution(model,sol)
 
 # Output results
-geo.compare_optimization(stats=True)
-geo.plot_optimal_layouts()
+# geo.compare_optimization(stats=True)
+# geo.plot_optimal_layouts()
 # vis.plot_wind_rose(wind_rose)
 
+geo.show_flowers_solution(stats=True)
+geo.plot_flowers_layout()
+
 # Save results
-pickle.dump(geo, open('solutions/sol.p','wb'))
+# pickle.dump(geo, open('solutions/sol.p','wb'))
 
 plt.show()
