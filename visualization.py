@@ -199,24 +199,20 @@ def plot_wind_rose(
 
         return ax
 
-def plot_optimal_layout(ax, boundaries, x_final, y_final, x_init, y_init):
-    # TODO: organize code and include axis labels
-        ax.plot(x_init, y_init, "ob")
-        ax.plot(x_final, y_final, "or")
-        # plt.title('Layout Optimization Results', fontsize=fontsize)
-        ax.set(xlabel="x (m)", ylabel="y (m)", aspect='equal')
-        ax.grid()
-        # plt.xlabel("x (m)", fontsize=fontsize)
-        # plt.ylabel("y (m)", fontsize=fontsize)
-        # plt.axis("equal")
-        # plt.grid()
-        # plt.tick_params(which="both", labelsize=fontsize)
+def plot_optimal_layout(ax, boundaries, x_final, y_final, x_init, y_init, D):
 
-        verts = boundaries
-        for i in range(len(verts)):
-            if i == len(verts) - 1:
-                ax.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
-            else:
-                ax.plot(
-                    [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
-                )
+    # Plot turbine locations
+    ax.plot(x_init / D, y_init / D, "ob")
+    ax.plot(x_final / D, y_final / D, "or")
+    ax.set(xlabel="x / D", ylabel="y / D", aspect='equal')
+    ax.grid()
+
+    # Plot plant boundary
+    verts = boundaries / D
+    for i in range(len(verts)):
+        if i == len(verts) - 1:
+            ax.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
+        else:
+            ax.plot(
+                [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
+            )

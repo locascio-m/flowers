@@ -79,10 +79,10 @@ class Flowers():
 
         # Truncate Fourier series to specified number of modes
         if num_terms > 0 and num_terms <= len(a_free):
-            a_free = a_free[0:num_terms-1]
-            b_free = b_free[0:num_terms-1]
-            a_wake = a_wake[0:num_terms-1]
-            b_wake = b_wake[0:num_terms-1]
+            a_free = a_free[0:num_terms]
+            b_free = b_free[0:num_terms]
+            a_wake = a_wake[0:num_terms]
+            b_wake = b_wake[0:num_terms]
 
         # Compile Fourier coefficients
         self.fs = pd.DataFrame({'a_free': a_free, 'b_free': b_free, 'a_wake': a_wake, 'b_wake': b_wake})
@@ -134,6 +134,7 @@ class Flowers():
             du = self.fs.a_wake[0] * (
                 theta_c * (self.k * R * (theta_c**2 + 3) + 3) / (3 * (self.k * R + 1)**3)
                 )
+            # TODO: eliminate for loop with matrix multiplication
             for n in range(1, len(self.fs.b_wake)):
                 du += (2 * (
                     self.fs.a_wake[n] * np.cos(n * THETA) + self.fs.b_wake[n] * np.sin(n * THETA))
@@ -156,6 +157,7 @@ class Flowers():
         
         # Sum AEP contribution of each turbine
         aep = 0.
+        # TODO: avoid 2 for loops
         for i in range(len(self.layout_x)):
 
             # Define array of turbine position relative to turbine 'i'
@@ -199,7 +201,7 @@ class ModelComparison:
 
         # Initialize FLORIS from Jensen input file
         self.floris = wfct.floris_interface.FlorisInterface(
-            "/Users/locascio/Library/Mobile Documents/com~apple~CloudDocs/Research/floris/examples/inputs/jensen.yaml"
+            "../floris/examples/inputs/jensen.yaml"
             )
         self.floris.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
@@ -217,9 +219,11 @@ class ModelComparison:
         self.floris.reinitialize(
             wind_directions=wd_array,
             wind_speeds=ws_array)
+        self.floris.calculate_wake()
 
         # TODO: import from FLORIS
         k = 0.05 
+        self.diameter = self.floris.floris.farm.rotor_diameters[0][0][0]
 
         # Initialize FLOWERS interface
         self.flowers = Flowers(
@@ -227,7 +231,7 @@ class ModelComparison:
             self.layout_x,
             self.layout_y,
             k=k,
-            D=self.floris.floris.farm.rotor_diameters[0]
+            D=self.diameter
             )
 
     ###########################################################################
@@ -278,7 +282,7 @@ class ModelComparison:
         self.floris.reinitialize(
             wind_directions=wd_array,
             wind_speeds=ws_array)
-
+        
         return self.floris
 
     def resample_floris(self, ws_avg=False, wd_resolution=1.0):
@@ -288,33 +292,38 @@ class ModelComparison:
         """
 
         # Resample wind rose with specified wind direction bins
-        wr = tl.resample_wind_direction(self.wind_rose, wd=np.arange(0, 360, wd_resolution))
+        if wd_resolution > 1.0:
+            wr = tl.resample_wind_direction(self.wind_rose, wd=np.arange(0, 360, wd_resolution))
+        else:
+            wr = self.wind_rose
 
         # Resample wind rose by average wind speed per wind direction
         if ws_avg:
             wr = tl.resample_average_ws_by_wd(wr)
+            freq = wr.freq_val.to_numpy()
+            self.freq_floris = freq / np.sum(freq)
+            self.bins_floris = len(wr.wd)
+            # self.freq_floris = np.reshape(freq,(len(wr.wd),1))
 
-        wd_array = np.array(wr["wd"].unique(), dtype=float)
-        ws_array = np.array(wr["ws"].unique(), dtype=float)  
-        wd_grid, ws_grid = np.meshgrid(wd_array, ws_array, indexing="ij")
-        freq_interp = NearestNDInterpolator(wr[["wd", "ws"]], wr["freq_val"])
-        freq = freq_interp(wd_grid, ws_grid)
-        self.freq_floris = freq / np.sum(freq)
-        self.bins_floris = len(wd_array)
-
-        ## TODO: average ws reinitialize
-        if ws_avg:
             self.floris.reinitialize(
-                wind_directions=wd_array,
-                wind_speeds=ws_array,
-                # time_series=True,
+                wind_directions=wr.wd,
+                wind_speeds=wr.ws,
+                time_series=True,
                 )
-            # self.freq_floris = wr.freq_val.to_numpy()
+
         else:
+            wd_array = np.array(self.wind_rose["wd"].unique(), dtype=float)
+            ws_array = np.array(self.wind_rose["ws"].unique(), dtype=float)  
+            wd_grid, ws_grid = np.meshgrid(wd_array, ws_array, indexing="ij")
+            freq_interp = NearestNDInterpolator(self.wind_rose[["wd", "ws"]], self.wind_rose["freq_val"])
+            freq = freq_interp(wd_grid, ws_grid)
+            self.freq_floris = freq / np.sum(freq)
+            self.bins_floris = len(wd_array)
+
             self.floris.reinitialize(
                 wind_directions=wd_array,
                 wind_speeds=ws_array)
-
+        
         return self.floris
 
     def initialize_optimization(self, boundaries=None, num_terms=None, wd_resolution=None):
@@ -348,7 +357,6 @@ class ModelComparison:
         # Reinitialize FLORIS to user specification
         if wd_resolution != None:
             self.resample_floris(ws_avg=True, wd_resolution=wd_resolution)
-        self.floris.calculate_wake()
 
         return self.flowers, self.floris
     
@@ -404,7 +412,13 @@ class ModelComparison:
                 self.flowers_performance['obj_value'].append(float(items[5]))
         self.flowers_performance['iter'] = len(self.flowers_performance['obj_value'])
 
-    def save_floris_solution(self, model, sol, history="SLSQP.out"):
+        # TODO: Store layout at each iteration
+        from pyoptsparse.pyOpt_history import History
+        hist = History('hist.hist')
+        val = hist.getValues(major=True)
+        # print(val)
+
+    def save_floris_solution(self, model, history="SLSQP.out"):
         """
         Store the quantities of interest from the FLORIS optimization results
         in a dictionary floris_performance:
@@ -424,7 +438,8 @@ class ModelComparison:
                 default: "SLSQP.out"
         """
         # Store optimal layout
-        xx, yy = model.get_optimal_layout(sol)
+        xx = model._unnorm(model.sol.getDVs()["x"], model.xmin, model.xmax)
+        yy = model._unnorm(model.sol.getDVs()["y"], model.ymin, model.ymax)
         self.floris_layout = (xx,yy)
 
         # Store optimal AEP
@@ -434,10 +449,10 @@ class ModelComparison:
 
         # Store optimization performance
         self.floris_performance = dict()
-        self.floris_performance['time'] = float(sol.optTime)
-        self.floris_performance['obj_time'] = float(sol.userObjTime)
+        self.floris_performance['time'] = float(model.sol.optTime)
+        self.floris_performance['obj_time'] = float(model.sol.userObjTime)
         # self.floris_performance['solver_time'] = float(sol.optCodeTime)
-        self.floris_performance['obj_calls'] = float(sol.userObjCalls)
+        self.floris_performance['obj_calls'] = float(model.sol.userObjCalls)
         self.floris_performance['obj_value'] = []
 
         # Read output file for history
@@ -465,7 +480,6 @@ class ModelComparison:
 
         Returns: AEP results printed to terminal.
         """
-
         # Reinitialize FLOWERS and FLORIS interfaces
         if num_terms == None:
             self.reinitialize_flowers()
@@ -499,11 +513,6 @@ class ModelComparison:
 
         Returns: Optimization results printed to terminal
         """
-        # Reinitialize FLORIS interface and compute AEP of optimal solutions
-        self.reinitialize_floris()
-
-        self.floris.reinitialize(layout=(self.floris_layout[0].flatten(),self.floris_layout[1].flatten()))
-        self.aep_floris = self.floris.get_farm_AEP(freq=self.freq_floris)
 
         print("============================")
         print('    Optimization Results    ')
@@ -547,25 +556,44 @@ class ModelComparison:
         
         print("============================")
 
+    def show_floris_solution(self, stats=False):
+        """Print quantities of interest of FLOWERS optimization"""
+        print("============================")
+        print('    Optimization Results    ')
+        print('    FLORIS Bins: {:.0f}'.format(self.bins_floris))
+        print("----------------------------")
+        print("Initial AEP:      {:.3f} GWh".format(self.aep_initial / 1.0e9))
+        print("Optimal AEP:      {:.3f} GWh".format(self.aep_floris / 1.0e9))
+        print("FLORIS AEP Gain:      {:.2f}%".format((self.aep_floris - self.aep_initial) / self.aep_initial * 100))
+
+        if stats:
+            print("----------------------------")
+            print("FLORIS Time:         {:.1f} s".format(self.floris_performance['time']))
+            print("FLORIS AEP Evaluations:  {:.0f}".format(self.floris_performance['obj_calls']))
+            print("FLORIS Iterations:       {:.0f}".format(self.floris_performance['iter']))
+        
+        print("============================")
+
     def plot_flowers_layout(self, ax=None):
         """Plot initial and FLOWERS optimal layouts on specified axes"""
         if ax is None:
             _, ax = plt.subplots(1,1)
-        vis.plot_optimal_layout(ax, self.boundaries, self.flowers_layout[0], self.flowers_layout[1], self.layout_x, self.layout_y)
+        vis.plot_optimal_layout(ax, self.boundaries, self.flowers_layout[0], self.flowers_layout[1], self.layout_x, self.layout_y, self.diameter)
         return ax
     
-    def plot_floris_layout(self, ax):
+    def plot_floris_layout(self, ax=None):
         """Plot initial and FLORIS optimal layouts on specified axes"""
-
-        vis.plot_optimal_layout(ax, self.boundaries, self.floris_layout[0], self.floris_layout[1], self.layout_x, self.layout_y)
+        if ax is None:
+            _, ax = plt.subplots(1,1)
+        vis.plot_optimal_layout(ax, self.boundaries, self.floris_layout[0], self.floris_layout[1], self.layout_x, self.layout_y, self.diameter)
         return ax
     
     def plot_optimal_layouts(self):
         """Plot initial, FLOWERS, and FLORIS optimal layouts on specified axes"""
 
-        fig, (ax0, ax1) = plt.subplots(1,2, figsize=(10,5))
-        vis.plot_optimal_layout(ax0, self.boundaries, self.flowers_layout[0], self.flowers_layout[1], self.layout_x, self.layout_y)
-        vis.plot_optimal_layout(ax1, self.boundaries, self.floris_layout[0], self.floris_layout[1], self.layout_x, self.layout_y)
+        _, (ax0, ax1) = plt.subplots(1,2, figsize=(10,5))
+        vis.plot_optimal_layout(ax0, self.boundaries, self.flowers_layout[0], self.flowers_layout[1], self.layout_x, self.layout_y, self.diameter)
+        vis.plot_optimal_layout(ax1, self.boundaries, self.floris_layout[0], self.floris_layout[1], self.layout_x, self.layout_y, self.diameter)
         plt.legend(
             ["Old locations", "New locations"],
             bbox_to_anchor=(0.38, 1.1),
