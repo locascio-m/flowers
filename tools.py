@@ -37,7 +37,6 @@ def random_layout(boundaries=[], n_turb=0, idx=None, D=126.0):
     poly = Polygon(boundaries)
 
     # Generate new positions and check minimum spacing and boundary
-    # TODO: implement within polygon constraint
     for i in range(n_turb):
         prop_x = np.random.uniform(low=xmin, high=xmax)
         prop_y = np.random.uniform(low=ymin, high=ymax)
