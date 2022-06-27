@@ -200,6 +200,20 @@ def plot_wind_rose(
         return ax
 
 def plot_optimal_layout(ax, boundaries, x_final, y_final, x_init, y_init, D):
+    """
+    Plots the initial and final layouts (normalized by rotor radius) 
+        of an optimization study.
+
+    Args:
+        ax: matplotlib axis handle to plot layouts.
+        boundaries (list(float)): A list of the boundary vertices in the form
+            [(x0,y0), (x1,y1), ... , (xN,yN)].
+        x_final (np.array): x-coordinates of final layout.
+        y_final (np.array): y-coordinates of final layout.
+        x_init (np.array): x-coordinates of initial layout.
+        y_init (np.array): y-coordinates of initial layout.
+        D (float): rotor diameter
+    """
 
     # Plot turbine locations
     ax.plot(x_init / D, y_init / D, "ob")
@@ -216,3 +230,57 @@ def plot_optimal_layout(ax, boundaries, x_final, y_final, x_init, y_init, D):
             ax.plot(
                 [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
             )
+
+def plot_history(ax, obj, layout, boundaries, D, filename, show=True):
+    """
+    Plots the convergence history of the objective function and the wind farm
+        layout (optional)
+
+    Args:
+        ax: matplotlib axis handle to plot AEP history.
+        obj (list(float)): A list of AEP at each major iteration.
+        layout (tuple(float)): A list of wind farm (x,y) layout at each major iteration.
+        boundaries (list(float)): A list of the boundary vertices in the form
+            [(x0,y0), (x1,y1), ... , (xN,yN)].
+        D (float): rotor diameter
+        filename (str): name of .mp4 animation of layout progression.
+    """
+
+    import matplotlib.animation as animation
+
+    # Objective plot
+    ax.plot([elem / 1e9 for elem in obj])
+    ax.set(xlabel='Iteration', ylabel="AEP [GWh]")
+    ax.grid()
+
+    # Layout animation
+    if filename != None:
+        fig, ax1 = plt.subplots()
+        ax1.set(xlabel="x / D", ylabel="y / D", aspect='equal')
+        ax1.grid()
+
+        verts = boundaries / D
+        for i in range(len(verts)):
+            if i == len(verts) - 1:
+                ax1.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
+            else:
+                ax1.plot(
+                    [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
+                )
+
+        line, = ax1.plot([],[],"ob")
+
+        # Function to update turbine positions
+        def animate(i):
+            # Plot last two steps transparently
+            line.set_data(layout[0][i] / D, layout[1][i] / D)
+            ax1.set_title(str(i))
+            return line,
+
+        # Animation
+        ani = animation.FuncAnimation(fig, animate, frames=len(layout[0]), repeat=False)
+        ani.save(filename)
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)

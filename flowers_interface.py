@@ -4,6 +4,7 @@
 
 import numpy as np
 import pandas as pd
+from pyoptsparse.pyOpt_history import History
 from scipy.interpolate import NearestNDInterpolator
 import matplotlib.pyplot as plt
 
@@ -235,6 +236,16 @@ class ModelComparison:
             )
 
     ###########################################################################
+    # Internal tools
+    ###########################################################################
+
+    def _norm(self, val, x1, x2):
+            return (val - x1) / (x2 - x1)
+
+    def _unnorm(self, val, x1, x2):
+        return np.array(val) * (x2 - x1) + x1
+
+    ###########################################################################
     # Initialization methods
     ###########################################################################
 
@@ -303,7 +314,6 @@ class ModelComparison:
             freq = wr.freq_val.to_numpy()
             self.freq_floris = freq / np.sum(freq)
             self.bins_floris = len(wr.wd)
-            # self.freq_floris = np.reshape(freq,(len(wr.wd),1))
 
             self.floris.reinitialize(
                 wind_directions=wr.wd,
@@ -341,8 +351,14 @@ class ModelComparison:
             self.floris: FLORIS interface
         """
 
-        # Add boundary as class member
+        print("Initializing optimization problem.")
+
+        # Add boundary as class member and save boundary limits for normalization
         self.boundaries = boundaries
+        self.xmin = np.min([tup[0] for tup in boundaries])
+        self.xmax = np.max([tup[0] for tup in boundaries])
+        self.ymin = np.min([tup[1] for tup in boundaries])
+        self.ymax = np.max([tup[1] for tup in boundaries])
 
         # Reinitialize FLORIS interface and compute initial AEP
         self.reinitialize_floris()
@@ -364,105 +380,117 @@ class ModelComparison:
     # Store optimization solutions
     ###########################################################################
     
-    def save_flowers_solution(self, model, sol, history="SLSQP.out"):
+    def save_flowers_solution(self, sol, history="hist.hist"):
         """
         Store the quantities of interest from the FLOWERS optimization results
-        in a dictionary flowers_performance:
+        in a dictionary flowers_solution:
+            ** Number of iterations ['iter']
+            ** History of major objective evaluations ['aep']
+            ** History of wind farm (x,y) layout ['layout']
             ** Optimization time ['time']
             ** Solver time ['solver_time']
             ** Number of objective calls ['obj_calls']
-            ** History of objective evaluations ['obj_value']
-            ** Number of iterations ['iter']
 
-        Also stores:
-            ** Optimal layout in a tuple flowers_layout, where
-                layout_x = flowers_layout[0] and layout_y = flowers_layout[1]
-            ** Optimal AEP computed with FLORIS, aep_flowers
+        Also store optimal layout (flowers_layout) and optimal AEP (aep_flowers)
 
         Args:
-            model (layout:LayoutOptimization): FLOWERS optimization model
             sol: Optimization solution after running optimize()
-            history (str): Name of SLSQP output file
-                default: "SLSQP.out"
+            history (str): Name of history output file
+                default: "hist.hist"
         """
 
-        # Store optimal layout
-        xx, yy = model.get_optimal_layout(sol)
-        self.flowers_layout = (xx,yy)
+        print("Storing FLOWERS solution.")
 
-        # Store optimal AEP
+        # Read layout history
+        hist = History(history)
+        val = hist.getValues(names=['obj','x','y'], major=True)
+        xx = val['x']
+        yy = val['y']
+
+        # TODO: Save major iterations
+        # obj = val['obj']
+        # obj1 = np.minimum.accumulate(obj).flatten()
+        # _, ind = np.unique(obj1, return_index=True)
+        # _, ind = np.unique(np.minimum.accumulate(obj).flatten(), return_index=True)
+        # ind = np.flip(ind[1:])
+        # print(ind)
+        # ind = range(len(obj))
+
+        # Store solution data
+        self.flowers_solution = dict()
+        self.flowers_solution['iter'] = len(xx) - 1
+
+        # Store layouts
+        self.flowers_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
+        self.flowers_layout = (self.flowers_solution['layout'][0][-1],self.flowers_solution['layout'][1][-1])
+        # Store AEP
+        self.flowers_solution['aep'] = []
         self.reinitialize_floris()
-        self.floris.reinitialize(layout=(self.flowers_layout[0].flatten(),self.flowers_layout[1].flatten()))
-        self.aep_flowers = self.floris.get_farm_AEP(freq=self.freq_floris)
+        for i in range(len(xx)):
+            self.floris.reinitialize(layout=(self.flowers_solution['layout'][0][i],self.flowers_solution['layout'][1][i]))
+            self.flowers_solution['aep'].append(self.floris.get_farm_AEP(freq=self.freq_floris))
+        self.aep_flowers = self.flowers_solution['aep'][-1]
 
         # Store optimization performance
-        self.flowers_performance = dict()
-        self.flowers_performance['time'] = float(sol.optTime)
-        # self.flowers_performance['obj_time'] = float(sol.userObjTime)
-        self.flowers_performance['solver_time'] = float(sol.optCodeTime)
-        self.flowers_performance['obj_calls'] = float(sol.userObjCalls)
-        self.flowers_performance['obj_value'] = []
+        self.flowers_solution['time'] = float(sol.optTime)
+        self.flowers_solution['solver_time'] = float(sol.optCodeTime)
+        self.flowers_solution['obj_calls'] = float(sol.userObjCalls)
 
-        # Read output file for history
-        with open(history) as f:
-            tmp = f.readlines()[15:-2]
-            for line in tmp:
-                line = line.strip()
-                items = line.split()
-                self.flowers_performance['obj_value'].append(float(items[5]))
-        self.flowers_performance['iter'] = len(self.flowers_performance['obj_value'])
 
-        # TODO: Store layout at each iteration
-        from pyoptsparse.pyOpt_history import History
-        hist = History('hist.hist')
-        val = hist.getValues(major=True)
-        # print(val)
-
-    def save_floris_solution(self, model, history="SLSQP.out"):
+    def save_floris_solution(self, sol, history="hist.hist"):
         """
         Store the quantities of interest from the FLORIS optimization results
-        in a dictionary floris_performance:
+        in a dictionary floris_solution:
+            ** Number of iterations ['iter']
+            ** History of major objective evaluations ['aep']
+            ** History of wind farm (x,y) layout ['layout']
             ** Optimization time ['time']
             ** Solver time ['solver_time']
             ** Number of objective calls ['obj_calls']
-            ** History of objective evaluations ['obj_value']
-            ** Number of iterations ['iter']
 
-        Also store optimal layout in a tuple floris_layout, where
-        layout_x = flowers_layout[0] and layout_y = flowers_layout[1]
+        Also store optimal layout (floris_layout) and optimal AEP (aep_floris)
 
         Args:
-            model (layout:LayoutOptimization): FLORIS optimization model
             sol: Optimization solution after running optimize()
-            history (str): Name of SLSQP output file
-                default: "SLSQP.out"
+            history (str): Name of history output file
+                default: "hist.hist"
         """
-        # Store optimal layout
-        xx = model._unnorm(model.sol.getDVs()["x"], model.xmin, model.xmax)
-        yy = model._unnorm(model.sol.getDVs()["y"], model.ymin, model.ymax)
-        self.floris_layout = (xx,yy)
 
-        # Store optimal AEP
+        print("Storing FLORIS solution.")
+
+        # Read layout history
+        hist = History(history)
+        val = hist.getValues(names=['obj','x','y'], major=True)
+        xx = val['x']
+        yy = val['y']
+
+        # TODO: Save major iterations
+        # obj = val['obj']
+        # obj1 = np.minimum.accumulate(obj).flatten()
+        # _, ind = np.unique(obj1, return_index=True)
+        # _, ind = np.unique(np.minimum.accumulate(obj).flatten(), return_index=True)
+        # ind = np.flip(ind[1:])
+        # ind = range(len(obj))
+
+        # Store solution data
+        self.floris_solution = dict()
+        self.floris_solution['iter'] = len(xx) - 1
+
+        # Store layouts
+        self.floris_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
+        self.floris_layout = (self.floris_solution['layout'][0][-1],self.floris_solution['layout'][1][-1])
+        # Store AEP
+        self.floris_solution['aep'] = []
         self.reinitialize_floris()
-        self.floris.reinitialize(layout=(self.floris_layout[0].flatten(),self.floris_layout[1].flatten()))
-        self.aep_floris = self.floris.get_farm_AEP(freq=self.freq_floris)
+        for i in range(len(xx)):
+            self.floris.reinitialize(layout=(self.floris_solution['layout'][0][i],self.floris_solution['layout'][1][i]))
+            self.floris_solution['aep'].append(self.floris.get_farm_AEP(freq=self.freq_floris))
+        self.aep_floris = self.floris_solution['aep'][-1]
 
         # Store optimization performance
-        self.floris_performance = dict()
-        self.floris_performance['time'] = float(model.sol.optTime)
-        self.floris_performance['obj_time'] = float(model.sol.userObjTime)
-        # self.floris_performance['solver_time'] = float(sol.optCodeTime)
-        self.floris_performance['obj_calls'] = float(model.sol.userObjCalls)
-        self.floris_performance['obj_value'] = []
-
-        # Read output file for history
-        with open(history) as f:
-            tmp = f.readlines()[15:-2]
-            for line in tmp:
-                line = line.strip()
-                items = line.split()
-                self.floris_performance['obj_value'].append(float(items[5]))
-        self.floris_performance['iter'] = len(self.floris_performance['obj_value'])
+        self.floris_solution['time'] = float(sol.optTime)
+        self.floris_solution['solver_time'] = float(sol.optCodeTime)
+        self.floris_solution['obj_calls'] = float(sol.userObjCalls)
 
     ###########################################################################
     # Compare and visualize results
@@ -501,7 +529,7 @@ class ModelComparison:
         print("Percent Diff: {:.2f}%".format((aep_flowers - aep_floris) / aep_floris * 100))
         print("---------------------------")
 
-    def compare_optimization(self, stats=False):
+    def show_optimization_comparison(self, stats=False):
         """
         Compare AEP (evaluated with FLORIS at highest wind rose resolution)
         of the stored FLOWERS and FLORIS solutions. Reinitializes
@@ -527,14 +555,14 @@ class ModelComparison:
 
         if stats:
             print("----------------------------")
-            print("FLOWERS Time:         {:.1f} s".format(self.flowers_performance['time']))
-            print("FLORIS Time:          {:.1f} s".format(self.floris_performance['time']))
-            print("Speed-Up Factor:      {:.2f}x".format(self.floris_performance['time']/self.flowers_performance['time']))
+            print("FLOWERS Time:         {:.1f} s".format(self.flowers_solution['time']))
+            print("FLORIS Time:          {:.1f} s".format(self.floris_solution['time']))
+            print("Speed-Up Factor:      {:.2f}x".format(self.floris_solution['time']/self.flowers_solution['time']))
             print()
-            print("FLOWERS AEP Evaluations:  {:.0f}".format(self.flowers_performance['obj_calls']))
-            print("FLORIS AEP Evaluations:   {:.0f}".format(self.floris_performance['obj_calls']))
-            print("FLOWERS Iterations:       {:.0f}".format(self.flowers_performance['iter']))
-            print("FLORIS Iterations:        {:.0f}".format(self.floris_performance['iter']))
+            print("FLOWERS AEP Evaluations:  {:.0f}".format(self.flowers_solution['obj_calls']))
+            print("FLORIS AEP Evaluations:   {:.0f}".format(self.floris_solution['obj_calls']))
+            print("FLOWERS Iterations:       {:.0f}".format(self.flowers_solution['iter']))
+            print("FLORIS Iterations:        {:.0f}".format(self.floris_solution['iter']))
         
         print("============================")
     
@@ -550,9 +578,9 @@ class ModelComparison:
 
         if stats:
             print("----------------------------")
-            print("FLOWERS Time:         {:.1f} s".format(self.flowers_performance['time']))
-            print("FLOWERS AEP Evaluations:  {:.0f}".format(self.flowers_performance['obj_calls']))
-            print("FLOWERS Iterations:       {:.0f}".format(self.flowers_performance['iter']))
+            print("FLOWERS Time:         {:.1f} s".format(self.flowers_solution['time']))
+            print("FLOWERS AEP Evaluations:  {:.0f}".format(self.flowers_solution['obj_calls']))
+            print("FLOWERS Iterations:       {:.0f}".format(self.flowers_solution['iter']))
         
         print("============================")
 
@@ -568,9 +596,9 @@ class ModelComparison:
 
         if stats:
             print("----------------------------")
-            print("FLORIS Time:         {:.1f} s".format(self.floris_performance['time']))
-            print("FLORIS AEP Evaluations:  {:.0f}".format(self.floris_performance['obj_calls']))
-            print("FLORIS Iterations:       {:.0f}".format(self.floris_performance['iter']))
+            print("FLORIS Time:         {:.1f} s".format(self.floris_solution['time']))
+            print("FLORIS AEP Evaluations:  {:.0f}".format(self.floris_solution['obj_calls']))
+            print("FLORIS Iterations:       {:.0f}".format(self.floris_solution['iter']))
         
         print("============================")
 
@@ -579,6 +607,11 @@ class ModelComparison:
         if ax is None:
             _, ax = plt.subplots(1,1)
         vis.plot_optimal_layout(ax, self.boundaries, self.flowers_layout[0], self.flowers_layout[1], self.layout_x, self.layout_y, self.diameter)
+        plt.legend(
+            ["Old locations", "New locations"],
+            bbox_to_anchor=(0.05, 1.12),
+        )
+        ax.set(title="FLOWERS")
         return ax
     
     def plot_floris_layout(self, ax=None):
@@ -586,6 +619,11 @@ class ModelComparison:
         if ax is None:
             _, ax = plt.subplots(1,1)
         vis.plot_optimal_layout(ax, self.boundaries, self.floris_layout[0], self.floris_layout[1], self.layout_x, self.layout_y, self.diameter)
+        plt.legend(
+            ["Old locations", "New locations"],
+            bbox_to_anchor=(0.05, 1.12),
+        )
+        ax.set(title="FLORIS")
         return ax
     
     def plot_optimal_layouts(self):
@@ -599,5 +637,32 @@ class ModelComparison:
             bbox_to_anchor=(0.38, 1.1),
             ncol=2,
         )
+        ax0.set_title('FLOWERS')
+        ax1.set_title('FLORIS')
+    
+    def plot_flowers_history(self, ax=None, animate=None):
+        """Plot history of FLOWERS optimization AEP and layout (optional)"""
+        if ax is None:
+            _, ax = plt.subplots(1,1)
+        vis.plot_history(ax, self.flowers_solution['aep'], self.flowers_solution['layout'], self.boundaries, self.diameter, "flowers.mp4", animate)
+        ax.set(title="FLOWERS")
+        return ax
+    
+    def plot_floris_history(self, ax=None, animate=None):
+        """Plot history of FLORIS optimization AEP and layout (optional)"""
+        if ax is None:
+            _, ax = plt.subplots(1,1)
+        vis.plot_history(ax, self.floris_solution['aep'], self.floris_solution['layout'], self.boundaries, self.diameter, "floris.mp4", animate)
+        ax.set(title="FLORIS")
+        return ax
+    
+    def plot_optimization_histories(self, flowers_mov=None, floris_mov=None):
+        """
+        Plot history of FLOWERS and FLORIS optimizations, including objective function
+            convergence and animations of layout development.
+        """
+        _, (ax0, ax1) = plt.subplots(1,2, figsize=(10,5))
+        vis.plot_history(ax0, self.flowers_solution['aep'], self.flowers_solution['layout'], self.boundaries, self.diameter, flowers_mov, show=False)
+        vis.plot_history(ax1, self.floris_solution['aep'], self.floris_solution['layout'], self.boundaries, self.diameter, floris_mov, show=False)
         ax0.set_title('FLOWERS')
         ax1.set_title('FLORIS')

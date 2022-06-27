@@ -2,7 +2,6 @@
 
 # Michael LoCascio
 
-import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 
@@ -32,46 +31,30 @@ wind_rose = tl.load_wind_rose(1)
 boundaries = [(0.0, 0.0), (0.0, 800.0), (800.0, 800.0), (800.0, 0.0), (0.0, 0.0)]
 
 # Wind farm layout
-layout_x = np.array([1.,270., 799., 1., 400., 799., 1., 240., 799.])
-layout_y = np.array([1., 1., 1., 200., 260., 400., 700., 750., 799.])
-# layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=10)
+layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=9)
 
 # Initialize optimization comparison
 geo = flow.ModelComparison(wind_rose, layout_x, layout_y)
-fi, fli = geo.initialize_optimization(boundaries=boundaries, num_terms=7, wd_resolution=5.0)
+fi, fli = geo.initialize_optimization(boundaries=boundaries, num_terms=37, wd_resolution=5.0)
 
-# FLORIS optimization
-# model = opt.layout.Layout(fli, boundaries, freq=geo.freq_floris)
-# tmp = opt.optimization.Optimization(model=model, solver='SLSQP')
-
-# TODO: why is calculate_wake() not working?
+# FLORIS optimization TODO: why is calculate_wake() not working?
 fli.calculate_wake()
 prob = LayoutOptimizationPyOptSparse(fli, geo.boundaries, freq=geo.freq_floris, solver='SLSQP')
-prob.optimize()
-geo.save_floris_solution(prob)
+sol = prob.optimize()
+geo.save_floris_solution(sol)
 
 # FLOWERS optimization
 model = layout.LayoutOptimization(fi, geo.boundaries)
 tmp = opt.optimization.Optimization(model=model, solver='SLSQP')
 sol = tmp.optimize()
-geo.save_flowers_solution(model,sol)
+geo.save_flowers_solution(sol)
 
 # Output results
-
-# FLOWERS and FLORIS
-geo.compare_optimization(stats=True)
+geo.show_optimization_comparison(stats=True)
 geo.plot_optimal_layouts()
-vis.plot_wind_rose(wind_rose)
-
-# FLOWERS only
-# geo.show_flowers_solution(stats=True)
-# geo.plot_flowers_layout()
-
-# FLORIS only
-# geo.show_floris_solution(stats=True)
-# geo.plot_floris_layout()
+geo.plot_optimization_histories(flowers_mov="flowers.mp4", floris_mov="floris.mp4")
 
 # Save results
-# pickle.dump(geo, open('solutions/sol.p','wb'))
+# pickle.dump(geo, open('solutions/test.p','wb'))
 
 plt.show()
