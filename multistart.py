@@ -40,6 +40,7 @@ wd_resolution = 5.0
 
 # Output file name
 file_name = 'solutions/multi' + str(sys.argv[1]) + '.p'
+hist_file = 'output/hist' + str(sys.argv[1]) + '.hist'
 
 ### Optimization study
 
@@ -55,18 +56,18 @@ fi, fli = geo.initialize_optimization(boundaries=boundaries, num_terms=num_terms
 # FLORIS optimization
 print("Solving FLORIS optimization.")
 fli.calculate_wake()
-prob = LayoutOptimizationPyOptSparse(fli, geo.boundaries, freq=geo.freq_floris, solver='SLSQP')
+prob = LayoutOptimizationPyOptSparse(fli, geo.boundaries, freq=geo.freq_floris, solver='SLSQP', storeHistory=hist_file)
 sol = prob.optimize()
 print("Saving FLORIS solution.")
-geo.save_floris_solution(sol)
+geo.save_floris_solution(sol, history=hist_file)
 
 # FLOWERS optimization
 print("Solving FLOWERS optimization.")
 model = layout.LayoutOptimization(fi, geo.boundaries)
-tmp = opt.optimization.Optimization(model=model, solver='SLSQP')
+tmp = opt.optimization.Optimization(model=model, solver='SLSQP', storeHistory=hist_file)
 sol = tmp.optimize()
 print("Saving FLOWERS solution.")
-geo.save_flowers_solution(sol)
+geo.save_flowers_solution(sol, history=hist_file)
 
 # Save results
 pickle.dump(geo, open(file_name,'wb'))
