@@ -5,6 +5,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
+import sys
 
 from floris.tools.optimization.layout_optimization.layout_optimization_pyoptsparse import LayoutOptimizationPyOptSparse
 import floris.tools.optimization.pyoptsparse as opt
@@ -37,9 +38,8 @@ boundaries = [(0.0, 0.0), (0.0, 2000.0), (1600.0, 1600.0), (2000.0, 0.0), (0.0, 
 num_terms = 7
 wd_resolution = 5.0
 
-# Output file name TODO: how to name 
-file_name = 'solutions/multi' + '1' + '.p'
-
+# Output file name
+file_name = 'solutions/multi' + str(sys.argv[1]) + '.p'
 
 ### Optimization study
 

@@ -31,7 +31,7 @@ wind_rose = tl.load_wind_rose(1)
 boundaries = [(0.0, 0.0), (0.0, 800.0), (800.0, 800.0), (800.0, 0.0), (0.0, 0.0)]
 
 # Wind farm layout
-layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=9)
+layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=2)
 
 # Initialize optimization comparison
 geo = flow.ModelComparison(wind_rose, layout_x, layout_y)
@@ -51,8 +51,8 @@ geo.save_flowers_solution(sol)
 
 # Output results
 geo.show_optimization_comparison(stats=True)
-geo.plot_optimal_layouts()
-geo.plot_optimization_histories(flowers_mov="flowers.mp4", floris_mov="floris.mp4")
+# geo.plot_optimal_layouts()
+# geo.plot_optimization_histories(flowers_mov="flowers.mp4", floris_mov="floris.mp4")
 
 # Save results
 # pickle.dump(geo, open('solutions/test.p','wb'))
