@@ -24,6 +24,7 @@ def random_layout(boundaries=[], n_turb=0, idx=None, D=126.0):
         n_turb (int): Number of turbines
         D (float): Rotor diameter [m]
     """
+    print("Generating wind farm layout.")
     if idx != None:
         np.random.seed(idx)
     xx = np.zeros(n_turb)

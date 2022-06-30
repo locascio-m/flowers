@@ -28,7 +28,27 @@ The results are saved in the ModelComparison() object for post-processing.
 wind_rose = tl.load_wind_rose(1)
 
 # Wind farm boundaries
-boundaries = [(0.0, 0.0), (0.0, 800.0), (800.0, 800.0), (800.0, 0.0), (0.0, 0.0)]
+# boundaries = [(0.0, 0.0), (0.0, 800.0), (800.0, 800.0), (800.0, 0.0), (0.0, 0.0)]
+boundaries = [
+    (2714.4, 4049.4),
+    (2132.7, 938.8),
+    (2092.8, 591.6),
+    (2078.9, 317.3),
+    (2076.1, 148.5),
+    (2076.6, 0.0),
+    (2076.5, 6.5),
+    (1208.6, 847.0),
+    (0.0, 2017.7),
+    (1496.7, 4027.2),
+    (1531.8, 4006.2),
+    (1931.2, 3818.5),
+    (2058.3, 3783.6),
+    (2192.8, 3792.9),
+    (2316.8, 3846.4),
+    (2416.0, 3939.1),
+    (2528.6, 4089.0),
+    (2550.9, 4126.3)
+]
 
 # Wind farm layout
 layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=2)
@@ -51,7 +71,8 @@ geo.save_flowers_solution(sol)
 
 # Output results
 geo.show_optimization_comparison(stats=True)
-# geo.plot_optimal_layouts()
+geo.plot_optimal_layouts()
+vis.plot_wind_rose(wind_rose)
 # geo.plot_optimization_histories(flowers_mov="flowers.mp4", floris_mov="floris.mp4")
 
 # Save results
