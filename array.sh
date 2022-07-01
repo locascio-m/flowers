@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --account=windse
-#SBATCH --time=20:00
+#SBATCH --time=2-00:00:00
 #SBATCH --job-name=multi
 #SBATCH --nodes=1
 ##SBATCH --ntasks-per-node=8
-#SBATCH --partition=debug
+##SBATCH --partition=debug
 #SBATCH --mail-user=michael.locascio@nrel.gov
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --output=output/multi.%a.out
@@ -29,4 +29,4 @@ fi
 srun -n 1 python ./multistart.py $SUB_ID > output/multi.$SUB_ID.log 2>&1
 
 # submit as follows
-# $ sbatch --array=0-100 -N1 array.sh
+# $ sbatch --array=0-100 array.sh

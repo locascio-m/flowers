@@ -17,7 +17,7 @@ multistart.py script.
 """
 
 # Number of random cases
-multi = 2
+multi = 7
 
 # Initialize collected data
 aep_flowers = np.zeros(multi)
