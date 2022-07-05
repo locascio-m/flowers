@@ -26,7 +26,7 @@ else
 fi
 
 # Run our job
-srun -n 1 python ./multistart.py $SUB_ID > output/multi.$SUB_ID.log 2>&1
+srun --unbuffered -n 1 python ./multistart.py $SUB_ID > output/multi.$SUB_ID.log 2>&1
 
 # submit as follows
 # $ sbatch --array=0-100 array.sh
