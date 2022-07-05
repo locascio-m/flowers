@@ -98,6 +98,7 @@ def load_wind_rose(idx):
             - 'freq_val': np.array of frequency for each wind speed and direction
     """
 
+    print("Generating wind rose.")
     file_name = './wind_roses/wr' + str(idx) + '.p'
     df = pd.read_pickle(file_name)
     
