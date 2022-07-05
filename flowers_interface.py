@@ -202,7 +202,7 @@ class ModelComparison:
 
         # Initialize FLORIS from Jensen input file
         self.floris = wfct.floris_interface.FlorisInterface(
-            "../floris/examples/inputs/jensen.yaml"
+            "./inputs/jensen.yaml"
             )
         self.floris.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
