@@ -17,7 +17,7 @@ multistart.py script.
 """
 
 # Number of random cases
-multi = 7
+multi = 10
 
 # Initialize collected data
 aep_flowers = np.zeros(multi)
@@ -61,8 +61,13 @@ for i in range(multi):
     aep_floris[i] = sol.aep_floris
 
     # Plot optimal layouts
-    ax0.plot(sol.flowers_layout[0]/sol.diameter, sol.flowers_layout[1]/sol.diameter, "o", markersize=13.5, color='#21918c', alpha=0.5)
-    ax00.plot(sol.floris_layout[0]/sol.diameter, sol.floris_layout[1]/sol.diameter, "o", markersize=13.5, color='#21918c', alpha=0.5)
+    ax0.plot(sol.flowers_layout[0]/sol.diameter, sol.flowers_layout[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
+    ax00.plot(sol.floris_layout[0]/sol.diameter, sol.floris_layout[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
+
+    if i == 1:
+        sol.show_optimization_comparison(stats=True)
+        sol.plot_optimal_layouts()
+        sol.plot_optimization_histories(flowers_mov="flowers_1.mp4", floris_mov="floris_1.mp4")
 
 # Plot optimal AEP and solver time
 ax1.plot(time_flowers, aep_flowers/1e9, 'o', color='#440154')
@@ -87,8 +92,8 @@ for i in range(len(verts)):
             [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
         )
 
-ax0.set(xlabel="x / D", ylabel="y / D", aspect='equal')
-ax00.set(xlabel="x / D", ylabel="y / D", aspect='equal')
+ax0.set(xlabel="x / D", ylabel="y / D", title='FLOWERS', aspect='equal')
+ax00.set(xlabel="x / D", ylabel="y / D", title='FLORIS', aspect='equal')
 ax0.grid()
 ax00.grid()
 
@@ -96,21 +101,21 @@ ax00.grid()
 vis.plot_wind_rose(sol.wind_rose, ax=ax3)
 
 # Output averaged results
-print("============================")
+print("================================")
 print('Multistart Results    ')
-print('Number of Cases: {:.0f}'.format(multi))
-print('FLOWERS Terms: {:.0f}'.format(sol.terms_flowers))
-print('FLORIS Bins: {:.0f}'.format(sol.bins_floris))
+print('Number of Cases:              {:.0f}'.format(multi))
+print('FLOWERS Terms:                {:.0f}'.format(sol.terms_flowers))
+print('FLORIS Bins:                  {:.0f}'.format(sol.bins_floris))
 print()
-print('FLOWERS AEP Mean:        {:.3f} GWh'.format(np.mean(aep_flowers) / 1e9))
-print('FLOWERS AEP Std:           {:.3f} GWh'.format(np.std(aep_flowers) / 1e9))
-print('FLORIS AEP Mean:        {:.3f} GWh'.format(np.mean(aep_floris) / 1e9))
-print('FLORIS AEP Std:           {:.3f} GWh'.format(np.std(aep_floris) / 1e9))
+print('FLOWERS AEP Mean:    {:.3f} GWh'.format(np.mean(aep_flowers) / 1e9))
+print('FLOWERS AEP Std:       {:.3f} GWh'.format(np.std(aep_flowers) / 1e9))
+print('FLORIS AEP Mean:     {:.3f} GWh'.format(np.mean(aep_floris) / 1e9))
+print('FLORIS AEP Std:       {:.3f} GWh'.format(np.std(aep_floris) / 1e9))
 print()
-print('FLOWERS Time Mean:          {:.2f} s'.format(np.mean(time_flowers)))
-print('FLOWERS Time Std:           {:.2f} s'.format(np.std(time_flowers)))
-print('FLORIS Time Mean:          {:.2f} s'.format(np.mean(time_floris)))
-print('FLORIS Time Std:           {:.2f} s'.format(np.std(time_floris)))
+print('FLOWERS Time Mean:    {:.2f} s'.format(np.mean(time_flowers)))
+print('FLOWERS Time Std:     {:.2f} s'.format(np.std(time_flowers)))
+print('FLORIS Time Mean:     {:.2f} s'.format(np.mean(time_floris)))
+print('FLORIS Time Std:      {:.2f} s'.format(np.std(time_floris)))
 # print('Conv. Time Mean:     {:.2f} s'.format(np.mean(np.sort(time)[:-8])))
 # print('Conv. Time Std:      {:.2f} s'.format(np.std(np.sort(time)[:-8])))
 # print()
@@ -118,5 +123,5 @@ print('FLORIS Time Std:           {:.2f} s'.format(np.std(time_floris)))
 # print('Solution B AEP:  {:.3f} GWh'.format(aep[71] / 1e9))
 # print('Solution A Time:     {:.2f} s'.format(time[19]))
 # print('Solution B Time:     {:.2f} s'.format(time[71]))
-print("============================")
+print("================================")
 plt.show()
