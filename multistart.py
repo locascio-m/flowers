@@ -90,7 +90,7 @@ if __name__ == "__main__":
     tmp = opt.optimization.Optimization(
         model=model, 
         solver='SLSQP', 
-        storeHistory=hist_file
+        storeHistory=hist_file,
     )
     sol = tmp.optimize()
     geo.save_flowers_solution(sol, history=hist_file)

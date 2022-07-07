@@ -1,13 +1,14 @@
 #!/bin/bash
 #SBATCH --account=windse
-#SBATCH --time=2-00:00:00
 #SBATCH --job-name=multi
+#SBATCH --time=2-00:00:00
 #SBATCH --nodes=1
 ##SBATCH --ntasks-per-node=8
 ##SBATCH --partition=debug
+#SBATCH --output=output/multi.%a.out
 #SBATCH --mail-user=michael.locascio@nrel.gov
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --output=output/multi.%a.out
+
 
 # go to starting directory
 cd $HOME/flowers
