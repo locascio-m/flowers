@@ -60,6 +60,10 @@ if __name__ == "__main__":
     # Output file name
     file_name = 'solutions/multi' + str(sys.argv[1]) + '.p'
     hist_file = 'output/hist' + str(sys.argv[1]) + '.hist'
+    summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
+    print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
+    summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
+    print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
 
     ### Optimization study
 
@@ -77,9 +81,9 @@ if __name__ == "__main__":
         fli,
         geo.boundaries,
         freq=geo.freq_floris,
-        solver='SLSQP',
+        solver='SNOPT',
         storeHistory=hist_file,
-        optOptions = {"IPRINT": 0}
+        optOptions={'iPrint': -1, 'Print file': print_floris_name, 'Summary file': summary_floris_name},
     )
     sol = prob.optimize()
     geo.save_floris_solution(sol, history=hist_file)
@@ -89,8 +93,9 @@ if __name__ == "__main__":
     model = layout.LayoutOptimization(fi, geo.boundaries)
     tmp = opt.optimization.Optimization(
         model=model, 
-        solver='SLSQP', 
+        solver='SNOPT', 
         storeHistory=hist_file,
+        optOptions={'iPrint': -2, 'Print file': print_flowers_name, 'Summary file': summary_flowers_name},
     )
     sol = tmp.optimize()
     geo.save_flowers_solution(sol, history=hist_file)
