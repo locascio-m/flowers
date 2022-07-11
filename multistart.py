@@ -68,7 +68,7 @@ if __name__ == "__main__":
     ### Optimization study
 
     # Randomize wind farm layout
-    layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=n_turb)
+    layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=n_turb, idx=int(sys.argv[1]))
 
     # Initialize optimization interface
     geo = flow.ModelComparison(wind_rose, layout_x, layout_y)
