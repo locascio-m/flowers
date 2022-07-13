@@ -19,6 +19,13 @@ layout is randomized with a set number of turbines.
 
 The ModelComparison objects are saved to 'multi#.p' files for post-processing
 in comparison.py
+
+Usage:
+    $ python multistart.py <index> <opt_type>
+
+    *index* : index for file names and seed for randomized initial layout.
+    *opt_type* : specify 'flowers' for FLOWERS only, 'floris' for FLORIS only,
+        or 'both' for FLOWERS and FLORIS optimization.
 """
 
 if __name__ == "__main__":
@@ -29,7 +36,7 @@ if __name__ == "__main__":
     wind_rose = tl.load_wind_rose(1)
 
     # Number of turbines
-    n_turb = 31
+    n_turb = 1
 
     # Wind farm boundaries
     boundaries = [
@@ -63,19 +70,7 @@ if __name__ == "__main__":
     flowers_flag = False
     floris_flag = False
 
-    if str(sys.argv[2]) == "flowers":
-        flowers_flag = True
-        file_name = 'solutions/flowers_' + str(sys.argv[1]) + '.p'
-        hist_file = 'output/hist_flowers_' + str(sys.argv[1]) + '.hist'
-        summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
-        print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
-    else if str(sys.argv[2]) == "floris":
-        floris_flag = True
-        file_name = 'solutions/floris_' + str(sys.argv[1]) + '.p'
-        hist_file = 'output/hist_floris_' + str(sys.argv[1]) + '.hist'
-        summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
-        print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
-    else if str(sys.argv[2]) == "both":
+    if len(sys.argv) == 2:
         flowers_flag = True
         floris_flag = True
         file_name = 'solutions/multi_' + str(sys.argv[1]) + '.p'
@@ -84,8 +79,27 @@ if __name__ == "__main__":
         print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
         summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
         print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
-    else:
-        print("No optimization specified.")
+    elif str(sys.argv[2]) == "both":
+        flowers_flag = True
+        floris_flag = True
+        file_name = 'solutions/multi_' + str(sys.argv[1]) + '.p'
+        hist_file = 'output/hist_' + str(sys.argv[1]) + '.hist'
+        summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
+        print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
+        summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
+        print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
+    elif str(sys.argv[2]) == "flowers":
+        flowers_flag = True
+        file_name = 'solutions/flowers_' + str(sys.argv[1]) + '.p'
+        hist_file = 'output/hist_flowers_' + str(sys.argv[1]) + '.hist'
+        summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
+        print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
+    elif str(sys.argv[2]) == "floris":
+        floris_flag = True
+        file_name = 'solutions/floris_' + str(sys.argv[1]) + '.p'
+        hist_file = 'output/hist_floris_' + str(sys.argv[1]) + '.hist'
+        summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
+        print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
 
     ### Optimization study
 

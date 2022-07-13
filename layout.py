@@ -20,7 +20,7 @@ class LayoutOptimization:
             [(x0,y0), (x1,y1), ... , (xN,yN)]
     """
     
-    def __init__(self, fi, boundaries):
+    def __init__(self, fi, boundaries, scale=1.0):
         self.fi = fi
         self.boundaries = boundaries
 
@@ -35,6 +35,8 @@ class LayoutOptimization:
         self.y0 = _norm(self.fi.layout_y, self.ymin, self.ymax)
 
         self.min_dist = 2 * self.fi.D
+
+        self.scale = scale
 
         if not hasattr(fi, 'fs'):
             self.fi.fourier_coefficients()
@@ -77,10 +79,10 @@ class LayoutOptimization:
 
     def add_var_group(self, optProb):
         optProb.addVarGroup(
-            "x", self.nturbs, type="c", lower=0.0, upper=1.0, value=self.x0
+            "x", self.nturbs, type="c", lower=0.0, upper=1.0, value=self.x0, scale=self.scale
         )
         optProb.addVarGroup(
-            "y", self.nturbs, type="c", lower=0.0, upper=1.0, value=self.y0
+            "y", self.nturbs, type="c", lower=0.0, upper=1.0, value=self.y0, scale=self.scale
         )
 
         return optProb

@@ -18,6 +18,7 @@ multistart.py script.
 
 # Number of random cases
 multi = 2
+both = True
 
 # Initialize collected data
 aep_flowers = np.zeros(multi)
@@ -67,7 +68,7 @@ for i in range(multi):
     if i == 1:
         sol.show_optimization_comparison(stats=True)
         sol.plot_optimal_layouts()
-        sol.plot_optimization_histories(flowers_mov="flowers_9.mp4", floris_mov="floris_9.mp4")
+        # sol.plot_optimization_histories(flowers_mov="flowers_9.mp4", floris_mov="floris_9.mp4")
 
 # Plot optimal AEP and solver time
 ax1.plot(time_flowers, aep_flowers/1e9, 'o', color='#440154')
