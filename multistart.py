@@ -56,14 +56,36 @@ if __name__ == "__main__":
     # Wind rose resolution
     num_terms = 37
     wd_resolution = 5.0
+    
+    ### Output definitions
 
-    # Output file name
-    file_name = 'solutions/multi' + str(sys.argv[1]) + '.p'
-    hist_file = 'output/hist' + str(sys.argv[1]) + '.hist'
-    summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
-    print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
-    summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
-    print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
+    # Specify which optimizations to run
+    flowers_flag = False
+    floris_flag = False
+
+    if str(sys.argv[2]) == "flowers":
+        flowers_flag = True
+        file_name = 'solutions/flowers_' + str(sys.argv[1]) + '.p'
+        hist_file = 'output/hist_flowers_' + str(sys.argv[1]) + '.hist'
+        summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
+        print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
+    else if str(sys.argv[2]) == "floris":
+        floris_flag = True
+        file_name = 'solutions/floris_' + str(sys.argv[1]) + '.p'
+        hist_file = 'output/hist_floris_' + str(sys.argv[1]) + '.hist'
+        summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
+        print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
+    else if str(sys.argv[2]) == "both":
+        flowers_flag = True
+        floris_flag = True
+        file_name = 'solutions/multi_' + str(sys.argv[1]) + '.p'
+        hist_file = 'output/hist_' + str(sys.argv[1]) + '.hist'
+        summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
+        print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
+        summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
+        print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
+    else:
+        print("No optimization specified.")
 
     ### Optimization study
 
@@ -75,30 +97,32 @@ if __name__ == "__main__":
     fi, fli = geo.initialize_optimization(boundaries=boundaries, num_terms=num_terms, wd_resolution=wd_resolution)
 
     # FLORIS optimization
-    print("Solving FLORIS optimization.")
-    fli.calculate_wake()
-    prob = LayoutOptimizationPyOptSparse(
-        fli,
-        geo.boundaries,
-        freq=geo.freq_floris,
-        solver='SNOPT',
-        storeHistory=hist_file,
-        optOptions={'iPrint': -1, 'Print file': print_floris_name, 'Summary file': summary_floris_name},
-    )
-    sol = prob.optimize()
-    geo.save_floris_solution(sol, history=hist_file)
+    if floris_flag:
+        print("Solving FLORIS optimization.")
+        fli.calculate_wake()
+        prob = LayoutOptimizationPyOptSparse(
+            fli,
+            geo.boundaries,
+            freq=geo.freq_floris,
+            solver='SNOPT',
+            storeHistory=hist_file,
+            optOptions={'iPrint': -1, 'Print file': print_floris_name, 'Summary file': summary_floris_name},
+        )
+        sol = prob.optimize()
+        geo.save_floris_solution(sol, history=hist_file)
 
     # FLOWERS optimization
-    print("Solving FLOWERS optimization.")
-    model = layout.LayoutOptimization(fi, geo.boundaries)
-    tmp = opt.optimization.Optimization(
-        model=model, 
-        solver='SNOPT', 
-        storeHistory=hist_file,
-        optOptions={'iPrint': -2, 'Print file': print_flowers_name, 'Summary file': summary_flowers_name},
-    )
-    sol = tmp.optimize()
-    geo.save_flowers_solution(sol, history=hist_file)
+    if flowers_flag:
+        print("Solving FLOWERS optimization.")
+        model = layout.LayoutOptimization(fi, geo.boundaries)
+        tmp = opt.optimization.Optimization(
+            model=model, 
+            solver='SNOPT', 
+            storeHistory=hist_file,
+            optOptions={'iPrint': -2, 'Print file': print_flowers_name, 'Summary file': summary_flowers_name},
+        )
+        sol = tmp.optimize()
+        geo.save_flowers_solution(sol, history=hist_file)
 
     # Save results
     pickle.dump(geo, open(file_name,'wb'))
