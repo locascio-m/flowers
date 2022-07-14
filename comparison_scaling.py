@@ -17,14 +17,16 @@ multistart.py script.
 """
 
 # Number of random cases
-multi = 10
-scale = [2.0]
+multi = 0
+scales = [1, 5, 10, 50, 100, 500]
 
 # Initialize collected data
-aep_flowers = np.zeros(multi)
-aep_floris = np.zeros(multi)
-time_flowers = np.zeros(multi)
-time_floris = np.zeros(multi)
+aep_flowers = []
+aep_floris = []
+time_flowers = []
+time_floris = []
+iter_flowers = []
+iter_floris = []
 
 # Format plots
 font = 14
@@ -36,20 +38,56 @@ plt.rc('ytick', labelsize=font)    # fontsize of the tick labels
 plt.rc('legend', fontsize=font-2)    # legend fontsize
 plt.rc('figure', titlesize=font)  # fontsize of the figure title
 
-for i in scale:
+# Superimposed history
+_, (ax0, ax1) = plt.subplots(1,2, figsize=(12,4.75))
 
-    # Read data from each case
+# Superimposed history
+_, (ax2, ax3) = plt.subplots(1,2, figsize=(12,4.75))
+
+# Superimposed history
+_, (ax4, ax5) = plt.subplots(1,2, figsize=(12,4.75))
+
+# Superimposed history
+_, (ax6, ax7) = plt.subplots(1,2, figsize=(12,4.75))
+
+for i in scales:
+
+    # Read FLOWERS data
     file_name = 'solutions/flowers_' + str(multi) + '_scale_' + str(i) + '.p'
     sol = pickle.load(open(file_name,'rb'))
-    print("FLOWERS Scale: " + str(i))
-    sol.show_flowers_solution(stats=True)
-    sol.plot_flowers_layout()
+    aep_flowers.append(sol.aep_flowers)
+    time_flowers.append(sol.flowers_solution['time'])
+    iter_flowers.append(sol.flowers_solution['iter'])
+    vis.plot_history(ax0, sol.flowers_solution['aep'], sol.flowers_solution['layout'], sol.boundaries, sol.diameter)
+    # sol.plot_flowers_layout(ax=ax1)
 
-    # Read data from each case
+    # Read FLORIS data
     file_name = 'solutions/floris_' + str(multi) + '_scale_' + str(i) + '.p'
     sol = pickle.load(open(file_name,'rb'))
-    print("FLORIS Scale: " + str(i))
-    sol.show_floris_solution(stats=True)
-    sol.plot_floris_layout()
+    aep_floris.append(sol.aep_floris)
+    time_floris.append(sol.floris_solution['time'])
+    iter_floris.append(sol.floris_solution['iter'])
+    vis.plot_history(ax1, sol.floris_solution['aep'], sol.floris_solution['layout'], sol.boundaries, sol.diameter)
+    # sol.plot_floris_layout(ax=ax1)
+
+ax2.plot(scales, aep_flowers/1e9, 'o', color='#440154')
+ax3.plot(scales, aep_floris/1e9, 'o', color='#440154')
+ax4.plot(scales, time_flowers, 'o', color='#440154')
+ax5.plot(scales, time_floris, 'o', color='#440154')
+ax6.plot(scales, iter_flowers, 'o', color='#440154')
+ax7.plot(scales, iter_floris, 'o', color='#440154')
+
+ax2.set(xlabel="Scaling", ylabel="AEP (GWh)", title='FLOWERS')
+ax2.grid(True)
+ax3.set(xlabel="Scaling", ylabel="AEP (GWh)", title='FLORIS')
+ax3.grid(True)
+ax4.set(xlabel="Scaling", ylabel="Time (s)", title='FLOWERS')
+ax4.grid(True)
+ax5.set(xlabel="Scaling", ylabel="Time (s)", title='FLORIS')
+ax5.grid(True)
+ax6.set(xlabel="Scaling", ylabel="Iterations", title='FLOWERS')
+ax6.grid(True)
+ax7.set(xlabel="Scaling", ylabel="Iterations", title='FLORIS')
+ax7.grid(True)
 
 plt.show()

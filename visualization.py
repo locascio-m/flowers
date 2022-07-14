@@ -231,7 +231,7 @@ def plot_optimal_layout(ax, boundaries, x_final, y_final, x_init, y_init, D):
                 [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
             )
 
-def plot_history(ax, obj, layout, boundaries, D, filename, show=True):
+def plot_history(ax, obj, layout, boundaries, D, filename=None, show=True):
     """
     Plots the convergence history of the objective function and the wind farm
         layout (optional)

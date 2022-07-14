@@ -36,7 +36,7 @@ if __name__ == "__main__":
     wind_rose = tl.load_wind_rose(1)
 
     # Number of turbines
-    n_turb = 31
+    n_turb = 1
 
     # Wind farm boundaries
     boundaries = [
@@ -125,6 +125,7 @@ if __name__ == "__main__":
             solver='SNOPT',
             storeHistory=hist_file,
             optOptions={'iPrint': -1, 'Print file': print_floris_name, 'Summary file': summary_floris_name},
+            timeLimit=86400,
         )
         sol = prob.optimize()
         geo.save_floris_solution(sol, history=hist_file)
@@ -138,6 +139,7 @@ if __name__ == "__main__":
             solver='SNOPT', 
             storeHistory=hist_file,
             optOptions={'iPrint': -2, 'Print file': print_flowers_name, 'Summary file': summary_flowers_name},
+            timeLimit=86400,
         )
         sol = tmp.optimize()
         geo.save_flowers_solution(sol, history=hist_file)
