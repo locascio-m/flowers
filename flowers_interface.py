@@ -195,15 +195,18 @@ class ModelComparison:
         layout_y (numpy:array): Array of y-positions of each turbine
     """
 
-    def __init__(self, wind_rose, layout_x, layout_y):
+    def __init__(self, wind_rose, layout_x, layout_y, model="jensen"):
         self.wind_rose = wind_rose
         self.layout_x = layout_x
         self.layout_y = layout_y
+        self.model = model
 
         # Initialize FLORIS from Jensen input file
-        self.floris = wfct.floris_interface.FlorisInterface(
-            "./input/jensen.yaml"
-            )
+        if model == "jensen":
+            input_file = "./input/jensen.yaml"
+        elif model == "gauss":
+            input_file = "./input/gauss.yaml"
+        self.floris = wfct.floris_interface.FlorisInterface(input_file)
         self.floris.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
             wind_shear=0)
@@ -351,7 +354,7 @@ class ModelComparison:
             self.floris: FLORIS interface
         """
 
-        print("Initializing optimization problem.")
+        print("Initializing optimization problem with FLOWERS and FLORIS-" + self.model.capitalize() + ".")
 
         # Add boundary as class member and save boundary limits for normalization
         self.boundaries = boundaries
@@ -403,7 +406,7 @@ class ModelComparison:
 
         # Read layout history
         hist = History(history)
-        val = hist.getValues(names=['obj','x','y'], major=True)
+        val = hist.getValues(names=['feasibility','optimality','x','y'], major=True)
         xx = val['x']
         yy = val['y']
 
@@ -419,6 +422,8 @@ class ModelComparison:
         # Store solution data
         self.flowers_solution = dict()
         self.flowers_solution['iter'] = len(xx) - 1
+        self.flowers_solution['opt'] = val['optimality'].flatten()
+        self.flowers_solution['feas'] = val['feasibility'].flatten()
 
         # Store layouts
         self.flowers_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
@@ -460,7 +465,7 @@ class ModelComparison:
 
         # Read layout history
         hist = History(history)
-        val = hist.getValues(names=['obj','x','y'], major=True)
+        val = hist.getValues(names=['feasibility','optimality','x','y'], major=True)
         xx = val['x']
         yy = val['y']
 
@@ -475,6 +480,8 @@ class ModelComparison:
         # Store solution data
         self.floris_solution = dict()
         self.floris_solution['iter'] = len(xx) - 1
+        self.floris_solution['opt'] = val['optimality'].flatten()
+        self.floris_solution['feas'] = val['feasibility'].flatten()
 
         # Store layouts
         self.floris_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))

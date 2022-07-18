@@ -32,6 +32,9 @@ if __name__ == "__main__":
 
     ### Inputs
 
+    # Wake model
+    wake = "gauss"
+
     # Wind rose (sampled from stored wind roses)
     wind_rose = tl.load_wind_rose(1)
 
@@ -107,7 +110,7 @@ if __name__ == "__main__":
     layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=n_turb, idx=int(sys.argv[1]))
 
     # Initialize optimization interface
-    geo = flow.ModelComparison(wind_rose, layout_x, layout_y)
+    geo = flow.ModelComparison(wind_rose, layout_x, layout_y, model=wake)
     fi, fli = geo.initialize_optimization(boundaries=boundaries, num_terms=num_terms, wd_resolution=wd_resolution)
 
     # FLORIS optimization
@@ -121,6 +124,7 @@ if __name__ == "__main__":
             solver='SNOPT',
             storeHistory=hist_file,
             optOptions={'iPrint': -1, 'Print file': print_floris_name, 'Summary file': summary_floris_name},
+            timeLimit=86400,
         )
         sol = prob.optimize()
         geo.save_floris_solution(sol, history=hist_file)
@@ -134,6 +138,7 @@ if __name__ == "__main__":
             solver='SNOPT', 
             storeHistory=hist_file,
             optOptions={'iPrint': -2, 'Print file': print_flowers_name, 'Summary file': summary_flowers_name},
+            timeLimit=86400,
         )
         sol = tmp.optimize()
         geo.save_flowers_solution(sol, history=hist_file)

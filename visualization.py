@@ -284,3 +284,28 @@ def plot_history(ax, obj, layout, boundaries, D, filename=None, show=True):
             plt.show()
         else:
             plt.close(fig)
+
+def plot_optimality(ax_opt, ax_feas, optimality, feasibility):
+    """
+    Plots the convergence history of the objective function and the wind farm
+        layout (optional)
+
+    Args:
+        ax: matplotlib axis handle to plot AEP history.
+        obj (list(float)): A list of AEP at each major iteration.
+        layout (tuple(float)): A list of wind farm (x,y) layout at each major iteration.
+        boundaries (list(float)): A list of the boundary vertices in the form
+            [(x0,y0), (x1,y1), ... , (xN,yN)].
+        D (float): rotor diameter
+        filename (str): name of .mp4 animation of layout progression.
+    """
+
+    # Optimality plot
+    ax_opt.semilogy(optimality)
+    ax_opt.set(xlabel='Iteration', ylabel="Optimality")
+    ax_opt.grid()
+
+    # Feasibility plot
+    ax_feas.semilogy(feasibility)
+    ax_feas.set(xlabel='Iteration', ylabel="Feasibility")
+    ax_feas.grid()
