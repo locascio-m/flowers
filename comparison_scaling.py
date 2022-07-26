@@ -101,12 +101,15 @@ for j in multi:
 
         ## TODO: remove this block
         hist = History('output/hist_flowers_' + str(j) + '_scale_' + str(i) + '.hist')
-        val = hist.getValues(names=['feasibility','optimality'], major=True)
+        val = hist.getValues(names=['feasibility','optimality','spacing_con','boundary_con'], major=True)
+        val2 = hist.getValues(names=['boundary_con'], major=True)
         sol.flowers_solution['opt'] = val['optimality'].flatten()
         sol.flowers_solution['feas'] = val['feasibility'].flatten()
+        sol.flowers_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
+        sol.flowers_solution['con_space'] = val['spacing_con'].flatten()
 
         vis.plot_history(ax_flowers_history[-1], sol.flowers_solution['aep'], sol.flowers_solution['layout'], sol.boundaries, sol.diameter)
-        vis.plot_optimality(ax_flowers_feas[-1][1], ax_flowers_feas[-1][0], sol.flowers_solution['opt'], sol.flowers_solution['feas'])
+        vis.plot_constraints(ax_flowers_feas[-1][0], ax_flowers_feas[-1][1], sol.flowers_solution['con_bound'], sol.flowers_solution['con_space'])
         ax = fig_flowers_layout[-1].add_subplot(2,3,idx)
         sol.plot_flowers_layout(ax=ax)
         ax.set(title=str(i))
@@ -123,13 +126,15 @@ for j in multi:
 
         ## TODO: remove this block
         hist = History('output/hist_floris_' + str(j) + '_scale_' + str(i) + '.hist')
-        val = hist.getValues(names=['feasibility','optimality'], major=True)
+        val = hist.getValues(names=['feasibility','optimality','spacing_con','boundary_con'], major=True)
         sol.floris_solution['opt'] = val['optimality'].flatten()
         sol.floris_solution['feas'] = val['feasibility'].flatten()
+        sol.floris_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
+        sol.floris_solution['con_space'] = val['spacing_con'].flatten()
 
         # Plot FLORIS history and layouts
         vis.plot_history(ax_floris_history[-1], sol.floris_solution['aep'], sol.floris_solution['layout'], sol.boundaries, sol.diameter)
-        vis.plot_optimality(ax_floris_feas[-1][1], ax_floris_feas[-1][0], sol.floris_solution['opt'], sol.floris_solution['feas'])
+        vis.plot_constraints(ax_floris_feas[-1][0], ax_floris_feas[-1][1], sol.floris_solution['con_bound'], sol.floris_solution['con_space'])
         ax = fig_floris_layout[-1].add_subplot(2,3,idx)
         sol.plot_floris_layout(ax=ax)
         ax.set(title=str(i))
@@ -179,6 +184,55 @@ for j in multi:
     ax_floris_history[-1].set(title='FLORIS')
     ax_floris_history.pop()
 
+# Gauss optimization
+file_name = 'solutions/flowers_4.p'
+sol_flowers = pickle.load(open(file_name,'rb'))
+hist = History('output/hist_flowers_4.hist')
+val = hist.getValues(names=['feasibility','optimality','spacing_con','boundary_con'], major=True)
+sol_flowers.flowers_solution['opt'] = val['optimality'].flatten()
+sol_flowers.flowers_solution['feas'] = val['feasibility'].flatten()
+sol_flowers.flowers_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
+sol_flowers.flowers_solution['con_space'] = val['spacing_con'].flatten()
+file_name = 'solutions/floris_4.p'
+sol_floris = pickle.load(open(file_name,'rb'))
+hist = History('output/hist_floris_4.hist')
+val = hist.getValues(names=['feasibility','optimality','spacing_con','boundary_con'], major=True)
+sol_floris.floris_solution['opt'] = val['optimality'].flatten()
+sol_floris.floris_solution['feas'] = val['feasibility'].flatten()
+sol_floris.floris_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
+sol_floris.floris_solution['con_space'] = val['spacing_con'].flatten()
+
+fig80, (ax88, ax89) = plt.subplots(1,2, figsize=(12,4.75))
+sol_flowers.plot_flowers_layout(ax=ax88)
+sol_floris.plot_floris_layout(ax=ax89)
+
+fig90, (ax98, ax99) = plt.subplots(1,2, figsize=(12,4.75), sharey=True)
+sol_flowers.plot_flowers_history(ax=ax98)
+sol_floris.plot_floris_history(ax=ax99)
+
+fig100, ((ax101, ax102),(ax103, ax104)) = plt.subplots(2,2, figsize=(12,7.5))
+vis.plot_constraints(ax101, ax103, sol_flowers.flowers_solution['con_bound'], sol_flowers.flowers_solution['con_space'])
+vis.plot_constraints(ax102, ax104, sol_floris.floris_solution['con_bound'], sol_floris.floris_solution['con_space'])
+
+print("============================")
+print("Gauss Results")
+print("----------------------------")
+print("Initial AEP:      {:.3f} GWh".format(sol_flowers.aep_initial / 1.0e9))
+print("FLORIS  AEP:      {:.3f} GWh".format(sol_floris.aep_floris / 1.0e9))
+print("FLOWERS AEP:      {:.3f} GWh".format(sol_flowers.aep_flowers / 1.0e9))
+print("FLORIS AEP Gain:       {:.2f}%".format((sol_floris.aep_floris - sol_floris.aep_initial) / sol_floris.aep_initial * 100))
+print("FLOWERS AEP Gain:      {:.2f}%".format((sol_flowers.aep_flowers - sol_flowers.aep_initial) / sol_flowers.aep_initial * 100))
+print("----------------------------")
+print("FLOWERS Time:         {:.1f} s".format(sol_flowers.flowers_solution['time']))
+print("FLORIS Time:          {:.1f} s".format(sol_floris.floris_solution['time']))
+print("Speed-Up Factor:      {:.2f}x".format(sol_floris.floris_solution['time']/sol_flowers.flowers_solution['time']))
+print()
+print("FLOWERS AEP Evaluations:  {:.0f}".format(sol_flowers.flowers_solution['obj_calls']))
+print("FLORIS AEP Evaluations:   {:.0f}".format(sol_floris.floris_solution['obj_calls']))
+print("FLOWERS Iterations:       {:.0f}".format(sol_flowers.flowers_solution['iter']))
+print("FLORIS Iterations:        {:.0f}".format(sol_floris.floris_solution['iter']))
+print("============================")
+
 # Plot formatting
 
 ax2.set(xlabel="Scaling", ylabel="AEP (GWh)", title='FLOWERS')
@@ -197,5 +251,12 @@ ax7.grid(True)
 ax2.legend(multi_str)
 ax4.legend(multi_str)
 ax6.legend(multi_str)
+
+fig80.suptitle('Gauss Optimization (Index 4)')
+fig90.suptitle('Gauss Optimization (Index 4)')
+ax88.legend().set_visible(False)
+ax89.legend().set_visible(False)
+ax101.set(title='FLOWERS')
+ax102.set(title='FLORIS')
 
 plt.show()
