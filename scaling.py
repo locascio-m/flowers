@@ -103,6 +103,7 @@ if __name__ == "__main__":
 
     # Design variable scaling
     scaleDV = float(sys.argv[3])
+    scaleCON = 1.0
 
     ### Optimization study
 
@@ -121,7 +122,8 @@ if __name__ == "__main__":
             fli,
             geo.boundaries,
             freq=geo.freq_floris,
-            scale=scaleDV,
+            scale_dv=scaleDV,
+            scale_con=scaleCON,
             solver='SNOPT',
             storeHistory=hist_file,
             optOptions={'iPrint': -1, 'Print file': print_floris_name, 'Summary file': summary_floris_name},
@@ -133,7 +135,7 @@ if __name__ == "__main__":
     # FLOWERS optimization
     if flowers_flag:
         print("Solving FLOWERS optimization.")
-        model = layout.LayoutOptimization(fi, geo.boundaries, scale=scaleDV)
+        model = layout.LayoutOptimization(fi, geo.boundaries, scale_dv=scaleDV, scale_con=scaleCON)
         tmp = opt.optimization.Optimization(
             model=model, 
             solver='SNOPT', 

@@ -309,3 +309,29 @@ def plot_optimality(ax_opt, ax_feas, optimality, feasibility):
     ax_feas.semilogy(feasibility)
     ax_feas.set(xlabel='Iteration', ylabel="Feasibility")
     ax_feas.grid()
+
+def plot_constraints(ax_boundary, ax_spacing, boundary_constraint, spacing_constraint):
+    """
+    Plots the convergence history of the objective function and the wind farm
+        layout (optional)
+
+    Args:
+        ax: matplotlib axis handle to plot AEP history.
+        obj (list(float)): A list of AEP at each major iteration.
+        layout (tuple(float)): A list of wind farm (x,y) layout at each major iteration.
+        boundaries (list(float)): A list of the boundary vertices in the form
+            [(x0,y0), (x1,y1), ... , (xN,yN)].
+        D (float): rotor diameter
+        filename (str): name of .mp4 animation of layout progression.
+    """
+
+    # Boundary constraint plot
+    for n in range(len(boundary_constraint)):
+        ax_boundary.plot(boundary_constraint[n], alpha=0.3)
+    ax_boundary.set(xlabel='Iteration', ylabel="Boundary Constraint")
+    ax_boundary.grid()
+
+    # Spacing constraint plot
+    ax_spacing.plot(spacing_constraint)
+    ax_spacing.set(xlabel='Iteration', ylabel="Spacing Constraint")
+    ax_spacing.grid()
