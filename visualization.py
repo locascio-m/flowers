@@ -122,6 +122,19 @@ def plot_floris_field(fli, ax, wind_rose, bounds, pts=200, cmin=2, cmax=10):
 
     return im
 
+def plot_layout(layout_x, layout_y, ax=None, D=126.0):
+
+    if ax is None:
+        _, ax = plt.subplots()
+    
+    ax.scatter(layout_x/D, layout_y/D, s=0.01)
+    for x, y in zip(layout_x, layout_y):
+        ax.add_patch(plt.Circle((x/D, y/D), 0.5))
+    ax.set(xlabel="x / D", ylabel="y / D", aspect='equal')
+    ax.grid()
+
+    return ax
+
 def plot_wind_rose(
         wind_rose,
         ax=None,

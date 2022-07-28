@@ -137,7 +137,12 @@ if __name__ == "__main__":
             model=model, 
             solver='SNOPT', 
             storeHistory=hist_file,
-            optOptions={'iPrint': -2, 'Print file': print_flowers_name, 'Summary file': summary_flowers_name},
+            optOptions={
+                'iPrint': -2, 
+                'Print file': print_flowers_name, 
+                'Summary file': summary_flowers_name,
+                "Major feasibility tolerance": 1e-3
+                },
             timeLimit=86400,
         )
         sol = tmp.optimize()

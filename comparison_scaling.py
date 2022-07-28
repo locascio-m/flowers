@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 from pyoptsparse.pyOpt_history import History
+from scipy.spatial.distance import cdist
 
 import visualization as vis
 
@@ -193,6 +194,14 @@ sol_flowers.flowers_solution['opt'] = val['optimality'].flatten()
 sol_flowers.flowers_solution['feas'] = val['feasibility'].flatten()
 sol_flowers.flowers_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
 sol_flowers.flowers_solution['con_space'] = val['spacing_con'].flatten()
+
+locs = np.vstack((sol_flowers.flowers_layout[0], sol_flowers.flowers_layout[1])).T
+distances = cdist(locs, locs)
+arange = np.arange(distances.shape[0])
+distances[arange, arange] = 1e10
+dist = np.min(distances, axis=0)
+print("FLOWERS Minimum Distance = {:.2f} m".format(np.min(dist)))
+
 file_name = 'solutions/floris_4.p'
 sol_floris = pickle.load(open(file_name,'rb'))
 hist = History('output/hist_floris_4.hist')
@@ -201,6 +210,13 @@ sol_floris.floris_solution['opt'] = val['optimality'].flatten()
 sol_floris.floris_solution['feas'] = val['feasibility'].flatten()
 sol_floris.floris_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
 sol_floris.floris_solution['con_space'] = val['spacing_con'].flatten()
+
+locs = np.vstack((sol_floris.floris_layout[0], sol_floris.floris_layout[1])).T
+distances = cdist(locs, locs)
+arange = np.arange(distances.shape[0])
+distances[arange, arange] = 1e10
+dist = np.min(distances, axis=0)
+print("FLORIS Minimum Distance = {:.2f} m".format(np.min(dist)))
 
 fig80, (ax88, ax89) = plt.subplots(1,2, figsize=(12,4.75))
 sol_flowers.plot_flowers_layout(ax=ax88)

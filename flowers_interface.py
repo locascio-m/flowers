@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from pyoptsparse.pyOpt_history import History
 from scipy.interpolate import NearestNDInterpolator
+import time
 import matplotlib.pyplot as plt
 
 import floris.tools as wfct
@@ -50,9 +51,6 @@ class Flowers():
 
         # Resample wind rose for average wind speed per wind direction
         wr = self.wind_rose.copy(deep=True)
-        
-        # TODO: reintroduce coarser wind rose to calculate FS coefficients
-        # wr = tl.resample_wind_direction(wr, wd=wd)
         wr = tl.resample_average_ws_by_wd(wr)
 
         # Transform wind direction to polar angle
@@ -126,24 +124,38 @@ class Flowers():
             (1 / R + self.k * np.sqrt(1 + self.k**2 - R**(-2)))
             / (-self.k / R + np.sqrt(1 + self.k**2 - R**(-2)))
             ))
+        
+        # Contribution from zero-frequency Fourier mode
+        du = self.fs.a_wake[0] * (
+            theta_c * (self.k * R * (theta_c**2 + 3) + 3) / (3 * (self.k * R + 1)**3)
+            )
 
-        # Wake velocity contribution from each Fourier mode
-        # TODO: enforce maximum wake velocity deficit if R < 1
-        if R < 1:
-            du = 0.9999
-        else:
-            du = self.fs.a_wake[0] * (
-                theta_c * (self.k * R * (theta_c**2 + 3) + 3) / (3 * (self.k * R + 1)**3)
-                )
-            # TODO: eliminate for loop with matrix multiplication
-            for n in range(1, len(self.fs.b_wake)):
-                du += (2 * (
-                    self.fs.a_wake[n] * np.cos(n * THETA) + self.fs.b_wake[n] * np.sin(n * THETA))
-                    ) / (n * (self.k * R + 1))**3 * (
-                        np.sin(n * theta_c) 
-                        * (n**2 * (self.k * R * (theta_c**2 + 1) + 1) - 2 * self.k * R) 
-                        + 2 * n * self.k * R * theta_c * np.cos(n * theta_c)
-                        )
+        # Reshape variables for vectorized calculations
+        n = np.arange(1, len(self.fs.b_wake))
+        a_wake = np.swapaxes(np.tile(np.expand_dims(self.fs.a_wake[1:], axis=(1,2)),np.shape(R)),0,2)
+        b_wake = np.swapaxes(np.tile(np.expand_dims(self.fs.b_wake[1:], axis=(1,2)),np.shape(R)),0,2)
+        R = np.tile(np.expand_dims(R, axis=2),len(n))
+        THETA = np.tile(np.expand_dims(THETA, axis=2),len(n))
+        theta_c = np.tile(np.expand_dims(theta_c, axis=2),len(n))
+
+        # Vectorized contribution of higher Fourier modes
+        du += np.sum((2 * (
+            a_wake * np.cos(n * THETA) + b_wake * np.sin(n * THETA))
+            ) / (n * (self.k * R + 1))**3 * (
+                np.sin(n * theta_c) 
+                * (n**2 * (self.k * R * (theta_c**2 + 1) + 1) - 2 * self.k * R) 
+                + 2 * n * self.k * R * theta_c * np.cos(n * theta_c)
+                ), axis=2)
+
+        # # TODO: eliminate for loop with matrix multiplication
+        # for n in range(1, len(self.fs.b_wake)):
+        #     du += (2 * (
+        #         self.fs.a_wake[n] * np.cos(n * THETA) + self.fs.b_wake[n] * np.sin(n * THETA))
+        #         ) / (n * (self.k * R + 1))**3 * (
+        #             np.sin(n * theta_c) 
+        #             * (n**2 * (self.k * R * (theta_c**2 + 1) + 1) - 2 * self.k * R) 
+        #             + 2 * n * self.k * R * theta_c * np.cos(n * theta_c)
+        #             )
 
         return du
 
@@ -155,27 +167,43 @@ class Flowers():
 
         # Power component from freestream
         p0 = self.fs.a_free[0] * np.pi
-        
-        # Sum AEP contribution of each turbine
-        aep = 0.
-        # TODO: avoid 2 for loops
-        for i in range(len(self.layout_x)):
 
-            # Define array of turbine position relative to turbine 'i'
-            X = self.layout_x[i] - self.layout_x
-            Y = self.layout_y[i] - self.layout_y
+        # Reshape relative positions into 2D array
+        matrix_x = self.layout_x - np.reshape(self.layout_x,(-1,1))
+        matrix_y = self.layout_y - np.reshape(self.layout_y,(-1,1))
+        matrix_r = np.sqrt(matrix_x**2 + matrix_y**2)
 
-            # Remove turbine to prevent computing wake interaction with itself
-            X = np.delete(X,i)
-            Y = np.delete(Y,i)
+        # Vectorized wake calculation
+        p = self.calculate_wake(matrix_x,matrix_y)
 
-            # Compute power from each pairwise turbine interaction
-            p = 0.
-            for j in range(len(X)):
-                p += self.calculate_wake(X[j],Y[j])
+        # Mask turbine interaction with itself
+        p = np.ma.masked_where(matrix_r < self.D/2, p)
+
+        # Sum power for each turbine
+        p_sum = np.sum(p, axis=0)
+        aep = np.sum(tl.cp_lookup(p0 - p_sum)  * (p0 - p_sum)**3)
+
+        # # Sum AEP contribution of each turbine
+        # aep = 0.
+
+        # # TODO: avoid 2 for loops
+        # for i in range(len(self.layout_x)):
+
+        #     # Define array of turbine position relative to turbine 'i'
+        #     X = self.layout_x[i] - self.layout_x
+        #     Y = self.layout_y[i] - self.layout_y
+
+        #     # Remove turbine to prevent computing wake interaction with itself
+        #     X = np.delete(X,i)
+        #     Y = np.delete(Y,i)
+
+        #     # Compute power from each pairwise turbine interaction
+        #     p = 0.
+        #     for j in range(len(X)):
+        #         p += self.calculate_wake(X[j],Y[j])
             
-            # Look up power coefficient from average wake velocity
-            aep += tl.cp_lookup(p0 - p)  * (p0 - p)**3
+        #     # Look up power coefficient from average wake velocity
+        #     aep += tl.cp_lookup(p0 - p)  * (p0 - p)**3
         
         return 0.5 * 1.225 * np.pi * self.D**2 / 4 * 8760 * aep
 
@@ -213,7 +241,7 @@ class ModelComparison:
         
         # Initialize wind direction-speed frequency array for AEP
         wd_array = np.array(self.wind_rose["wd"].unique(), dtype=float)
-        ws_array = np.array(self.wind_rose["ws"].unique(), dtype=float)  
+        ws_array = np.array(self.wind_rose["ws"].unique(), dtype=float)
         wd_grid, ws_grid = np.meshgrid(wd_array, ws_array, indexing="ij")
         freq_interp = NearestNDInterpolator(self.wind_rose[["wd", "ws"]], self.wind_rose["freq_val"])
         freq = freq_interp(wd_grid, ws_grid)
@@ -224,6 +252,17 @@ class ModelComparison:
             wind_directions=wd_array,
             wind_speeds=ws_array)
         self.floris.calculate_wake()
+
+        # Initialize FLORIS post-processing
+        self.post = wfct.floris_interface.FlorisInterface("./input/gauss.yaml")
+        self.post.reinitialize(
+            layout=(layout_x.flatten(),layout_y.flatten()), 
+            wind_shear=0)
+        self.post_freq = self.freq_floris
+        self.post.reinitialize(
+            wind_directions=wd_array,
+            wind_speeds=ws_array)
+        self.post.calculate_wake()
 
         # TODO: import from FLORIS
         k = 0.05 
@@ -363,9 +402,10 @@ class ModelComparison:
         self.ymin = np.min([tup[1] for tup in boundaries])
         self.ymax = np.max([tup[1] for tup in boundaries])
 
-        # Reinitialize FLORIS interface and compute initial AEP
-        self.reinitialize_floris()
-        self.aep_initial = self.floris.get_farm_AEP(freq=self.freq_floris)
+        # Compute initial AEP
+        # self.reinitialize_floris()
+        # self.aep_initial = self.floris.get_farm_AEP(freq=self.freq_floris)
+        self.aep_initial = self.post.get_farm_AEP(freq=self.post_freq)
 
         # Reinitialise FLOWERS to user specification
         if num_terms == None:
@@ -379,6 +419,80 @@ class ModelComparison:
 
         return self.flowers, self.floris
     
+    def compute_flowers_aep(self, num_terms=None, timer=False):
+        if num_terms == None:
+            self.reinitialize_flowers()
+        else:
+            self.truncate_flowers(num_terms=num_terms)
+        if timer:
+            t = time.time()
+            aep = self.flowers.calculate_aep()
+            elapsed = time.time() - t
+            return aep, elapsed
+        else:
+            aep = self.flowers.calculate_aep()
+            return aep
+    
+    def compute_floris_aep(self, wd_resolution=1.0, ws_avg=False, timer=False):
+        if wd_resolution > 1.0:
+            self.resample_floris(wd_resolution=wd_resolution)
+        # elif ws_avg:
+        #     self.resample_floris(ws_avg=ws_avg)
+        # else:
+        #     self.reinitialize_floris()
+        if timer:
+            t = time.time()
+            aep = self.floris.get_farm_AEP(freq=self.freq_floris)
+            elapsed = time.time() - t
+            return aep, elapsed
+        else:
+            aep = self.floris.get_farm_AEP(freq=self.freq_floris)
+            return aep
+
+    ###########################################################################
+    # AEP comparisons
+    ###########################################################################   
+    def compare_aep(self, iter=5, num_terms=None, wd_resolution=1.0, ws_avg=False):
+
+        # Initialize containers
+        aep_flowers = np.zeros(iter)
+        aep_floris = np.zeros(iter)
+        time_flowers = np.zeros(iter)
+        time_floris = np.zeros(iter)
+
+        # Reinitialize FLORIS
+        if ws_avg:
+            self.resample_floris(ws_avg=True, wd_resolution=wd_resolution)
+
+        # Compute FLOWERS AEP and average
+        for n in range(iter):
+            tmp = self.compute_flowers_aep(num_terms=num_terms, timer=True)
+            aep_flowers[n] = tmp[0]
+            time_flowers[n] = tmp[1]
+
+            tmp = self.compute_floris_aep(wd_resolution=wd_resolution, timer=True)
+            aep_floris[n] = tmp[0]
+            time_floris[n] = tmp[1]
+        
+        aep_flowers_final = np.mean(aep_flowers)
+        time_flowers_final = np.mean(time_flowers)
+        aep_floris_final = np.mean(aep_floris)
+        time_floris_final = np.mean(time_floris)
+
+        print("============================")
+        print('    AEP Results    ')
+        print('    Number of Turbines: {:.0f}'.format(len(self.layout_x)))
+        print('    FLOWERS Terms: {:.0f}'.format(num_terms))
+        print('    FLORIS Bins:   {:.0f}'.format(int(360/wd_resolution)))
+        print("----------------------------")
+        print("FLORIS  AEP:      {:.3f} GWh".format(aep_floris_final / 1.0e9))
+        print("FLOWERS AEP:      {:.3f} GWh".format(aep_flowers_final / 1.0e9))
+        print("Percent Difference:  {:.1f}%".format((aep_flowers_final - aep_floris_final) / aep_floris_final * 100))
+        print("FLORIS Time:       {:.3f} s".format(time_floris_final))
+        print("FLOWERS Time:      {:.3f} s".format(time_flowers_final))
+        print("Factor of Improvement: {:.1f}x".format(time_floris_final/time_flowers_final))
+        print("============================")
+
     ###########################################################################
     # Store optimization solutions
     ###########################################################################
@@ -406,34 +520,27 @@ class ModelComparison:
 
         # Read layout history
         hist = History(history)
-        val = hist.getValues(names=['feasibility','optimality','x','y'], major=True)
+        val = hist.getValues(names=['feasibility','optimality','boundary_con','spacing_con','x','y'], major=True)
         xx = val['x']
         yy = val['y']
-
-        # TODO: Save major iterations
-        # obj = val['obj']
-        # obj1 = np.minimum.accumulate(obj).flatten()
-        # _, ind = np.unique(obj1, return_index=True)
-        # _, ind = np.unique(np.minimum.accumulate(obj).flatten(), return_index=True)
-        # ind = np.flip(ind[1:])
-        # print(ind)
-        # ind = range(len(obj))
 
         # Store solution data
         self.flowers_solution = dict()
         self.flowers_solution['iter'] = len(xx) - 1
         self.flowers_solution['opt'] = val['optimality'].flatten()
         self.flowers_solution['feas'] = val['feasibility'].flatten()
+        self.flowers_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
+        self.flowers_solution['con_space'] = val['spacing_con'].flatten()
 
         # Store layouts
         self.flowers_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
         self.flowers_layout = (self.flowers_solution['layout'][0][-1],self.flowers_solution['layout'][1][-1])
         # Store AEP
         self.flowers_solution['aep'] = []
-        self.reinitialize_floris()
+        # self.reinitialize_floris()
         for i in range(len(xx)):
-            self.floris.reinitialize(layout=(self.flowers_solution['layout'][0][i],self.flowers_solution['layout'][1][i]))
-            self.flowers_solution['aep'].append(self.floris.get_farm_AEP(freq=self.freq_floris))
+            self.post.reinitialize(layout=(self.flowers_solution['layout'][0][i],self.flowers_solution['layout'][1][i]))
+            self.flowers_solution['aep'].append(self.post.get_farm_AEP(freq=self.post_freq))
         self.aep_flowers = self.flowers_solution['aep'][-1]
 
         # Store optimization performance
@@ -465,33 +572,27 @@ class ModelComparison:
 
         # Read layout history
         hist = History(history)
-        val = hist.getValues(names=['feasibility','optimality','x','y'], major=True)
+        val = hist.getValues(names=['feasibility','optimality','boundary_con','spacing_con','x','y'], major=True)
         xx = val['x']
         yy = val['y']
-
-        # TODO: Save major iterations
-        # obj = val['obj']
-        # obj1 = np.minimum.accumulate(obj).flatten()
-        # _, ind = np.unique(obj1, return_index=True)
-        # _, ind = np.unique(np.minimum.accumulate(obj).flatten(), return_index=True)
-        # ind = np.flip(ind[1:])
-        # ind = range(len(obj))
 
         # Store solution data
         self.floris_solution = dict()
         self.floris_solution['iter'] = len(xx) - 1
         self.floris_solution['opt'] = val['optimality'].flatten()
         self.floris_solution['feas'] = val['feasibility'].flatten()
+        self.floris_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
+        self.floris_solution['con_space'] = val['spacing_con'].flatten()
 
         # Store layouts
         self.floris_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
         self.floris_layout = (self.floris_solution['layout'][0][-1],self.floris_solution['layout'][1][-1])
         # Store AEP
         self.floris_solution['aep'] = []
-        self.reinitialize_floris()
+        # self.reinitialize_floris()
         for i in range(len(xx)):
-            self.floris.reinitialize(layout=(self.floris_solution['layout'][0][i],self.floris_solution['layout'][1][i]))
-            self.floris_solution['aep'].append(self.floris.get_farm_AEP(freq=self.freq_floris))
+            self.post.reinitialize(layout=(self.floris_solution['layout'][0][i],self.floris_solution['layout'][1][i]))
+            self.floris_solution['aep'].append(self.post.get_farm_AEP(freq=self.post_freq))
         self.aep_floris = self.floris_solution['aep'][-1]
 
         # Store optimization performance
@@ -503,38 +604,38 @@ class ModelComparison:
     # Compare and visualize results
     ###########################################################################
 
-    def compare_aep(self, num_terms=None, wd_resolution=None):
-        """
-        Compare AEP evaluated with FLOWERS and FLORIS for the stored
-        wind rose and wind farm layout. Reinitializes the FLOWERS and
-        FLORIS interfaces stored in the class.
+    # def compare_aep(self, num_terms=None, wd_resolution=None):
+    #     """
+    #     Compare AEP evaluated with FLOWERS and FLORIS for the stored
+    #     wind rose and wind farm layout. Reinitializes the FLOWERS and
+    #     FLORIS interfaces stored in the class.
 
-        Args:
-            num_terms (int): Number of Fourier modes for the FLOWERS solution
-            wd_resolution (float): Width of the wind rose bins for the FLORIS solution
+    #     Args:
+    #         num_terms (int): Number of Fourier modes for the FLOWERS solution
+    #         wd_resolution (float): Width of the wind rose bins for the FLORIS solution
 
-        Returns: AEP results printed to terminal.
-        """
-        # Reinitialize FLOWERS and FLORIS interfaces
-        if num_terms == None:
-            self.reinitialize_flowers()
-        else:
-            self.truncate_flowers(num_terms=num_terms)
+    #     Returns: AEP results printed to terminal.
+    #     """
+    #     # Reinitialize FLOWERS and FLORIS interfaces
+    #     if num_terms == None:
+    #         self.reinitialize_flowers()
+    #     else:
+    #         self.truncate_flowers(num_terms=num_terms)
         
-        if wd_resolution == None:
-            self.reinitialize_floris()
-        else:
-            self.resample_floris(wd_resolution=wd_resolution)
+    #     if wd_resolution == None:
+    #         self.reinitialize_floris()
+    #     else:
+    #         self.resample_floris(wd_resolution=wd_resolution)
 
-        # Calculate AEP for both models
-        aep_flowers = self.flowers.calculate_aep()
-        aep_floris = self.floris.get_farm_AEP(freq=self.freq_floris)
+    #     # Calculate AEP for both models
+    #     aep_flowers = self.flowers.calculate_aep()
+    #     aep_floris = self.floris.get_farm_AEP(freq=self.freq_floris)
 
-        print("---------------------------")
-        print("FLORIS  AEP:  {:.3f} GWh".format(aep_floris / 1.0e9))
-        print("FLOWERS AEP:  {:.3f} GWh".format(aep_flowers / 1.0e9))
-        print("Percent Diff: {:.2f}%".format((aep_flowers - aep_floris) / aep_floris * 100))
-        print("---------------------------")
+    #     print("---------------------------")
+    #     print("FLORIS  AEP:  {:.3f} GWh".format(aep_floris / 1.0e9))
+    #     print("FLOWERS AEP:  {:.3f} GWh".format(aep_flowers / 1.0e9))
+    #     print("Percent Diff: {:.2f}%".format((aep_flowers - aep_floris) / aep_floris * 100))
+    #     print("---------------------------")
 
     def show_optimization_comparison(self, stats=False):
         """

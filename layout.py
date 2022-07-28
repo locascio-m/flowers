@@ -61,7 +61,7 @@ class LayoutOptimization:
         # Compute the objective function
         funcs = {}
         funcs["obj"] = (
-            -1 * self.fi.calculate_aep() / self.initial_AEP
+            -1 * (self.fi.calculate_aep() - self.initial_AEP) / self.initial_AEP
         )
 
         # Compute constraints, if any are defined for the optimization
