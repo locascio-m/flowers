@@ -408,6 +408,7 @@ class ModelComparison:
     def run_flowers_optimization(
         self, 
         solver='SNOPT',
+        scale_dv=1.0,
         history_file='',
         output_file='',
         timer=86400,
@@ -455,10 +456,10 @@ class ModelComparison:
             raise RuntimeError("Optimization has not been initialized.")
 
         # Initialize layout optimization class
-        model = lyt.LayoutOptimization(self.flowers, self.boundaries)
+        model = lyt.LayoutOptimization(self.flowers, self.boundaries, scale_dv=scale_dv)
         tmp = opt.optimization.Optimization(
             model=model, 
-            solver=solver, 
+            solver=solver,
             storeHistory=history_file,
             optOptions={
                 'iPrint': -2, 

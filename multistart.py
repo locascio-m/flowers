@@ -38,7 +38,7 @@ if __name__ == "__main__":
     wind_rose = tl.load_wind_rose(1)
 
     # Number of turbines
-    n_turb = 1
+    n_turb = 31
 
     # Wind farm boundaries
     boundaries = [
@@ -127,4 +127,4 @@ if __name__ == "__main__":
             )
 
     # Save results
-    # pickle.dump(geo, open(file_name,'wb'))
+    pickle.dump(geo, open(file_name,'wb'))
