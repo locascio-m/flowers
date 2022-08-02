@@ -117,7 +117,6 @@ if __name__ == "__main__":
     # FLORIS optimization
     if floris_flag:
         print("Solving FLORIS optimization.")
-        fli.calculate_wake()
         prob = LayoutOptimizationPyOptSparse(
             fli,
             geo.boundaries,

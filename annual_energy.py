@@ -3,7 +3,7 @@
 # Michael LoCascio
 
 import numpy as np
-import flowers_interface as flow
+import model as set
 import tools as tl
 import visualization as vis
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 D = 126.0
 num_terms = 181
 wd_resolution = 1.0
-ws_avg = False
+ws_avg = True
 
 ### Case 1: Small Aligned Wind Farm
 print("Starting Case 1.")
@@ -32,7 +32,7 @@ vis.plot_wind_rose(wind_rose, ax=ax11)
 vis.plot_layout(layout_x, layout_y, ax=ax12)
 
 # Initialize and compute AEP
-geo = flow.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
+geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
 geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg)
 
 print("Completing Case 1.")
@@ -54,7 +54,7 @@ vis.plot_wind_rose(wind_rose, ax=ax21)
 vis.plot_layout(layout_x, layout_y, ax=ax22)
 
 # Initialize and compute AEP
-geo = flow.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
+geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
 geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg)
 
 print("Completing Case 2.")
@@ -74,7 +74,7 @@ vis.plot_wind_rose(wind_rose, ax=ax31)
 vis.plot_layout(layout_x, layout_y, ax=ax32)
 
 # Initialize and compute AEP
-geo = flow.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
+geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
 geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg)
 
 print("Completing Case 3.")

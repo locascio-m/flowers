@@ -1,6 +1,10 @@
+# FLOWERS
+
+# Michael LoCascio
+
 import numpy as np
-from shapely.geometry import Polygon, Point, LineString
 from scipy.spatial.distance import cdist
+from shapely.geometry import Polygon, Point, LineString
 
 
 def _norm(val, x1, x2):
@@ -9,18 +13,27 @@ def _norm(val, x1, x2):
 def _unnorm(val, x1, x2):
     return np.array(val) * (x2 - x1) + x1
 
+
 class LayoutOptimization:
     """
     LayoutOptimization is a high-level interface to set up the layout optimization
-    problem for FLOWERS. This code is copied from FLORIS except for obj_func()
+    problem for FLOWERS. AEP is the objective function. Two constraints are enforced:
+    (1) minimum spacing of 2 rotor diameters and (2) all turbines must be within the
+    farm boundary. This code is copied from FLORIS except for obj_func()
 
     Args:
         fi (Flowers): FLOWERS interface
-        boundaries (list(float)): A list of the boundary vertices in the form
-            [(x0,y0), (x1,y1), ... , (xN,yN)]
+        boundaries (list(tuple)): boundary vertices in the form
+                [(x0,y0), (x1,y1), ... , (xN,yN)]
+        scale_dv (float, optional): scaling for design variables
+            (turbine positions). Defaults to 1.0
+        scale_con (float, optional): scaling for constraints
+            (spacing and boundary). Defaults to 1.0
+
     """
     
     def __init__(self, fi, boundaries, scale_dv=1.0, scale_con=1.0):
+
         self.fi = fi
         self.boundaries = boundaries
 
@@ -31,6 +44,8 @@ class LayoutOptimization:
         self.xmax = np.max([tup[0] for tup in boundaries])
         self.ymin = np.min([tup[1] for tup in boundaries])
         self.ymax = np.max([tup[1] for tup in boundaries])
+
+        # Normalized initial layout
         self.x0 = _norm(self.fi.layout_x, self.xmin, self.xmax)
         self.y0 = _norm(self.fi.layout_y, self.ymin, self.ymax)
 
@@ -39,9 +54,7 @@ class LayoutOptimization:
         self.scale_dv = scale_dv
         self.scale_con = scale_con
 
-        if not hasattr(fi, 'fs'):
-            self.fi.fourier_coefficients()
-
+        # Compute initial AEP
         self.initial_AEP = fi.calculate_aep()
     
     def __str__(self):

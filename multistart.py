@@ -8,8 +8,7 @@ import sys
 from floris.tools.optimization.layout_optimization.layout_optimization_pyoptsparse import LayoutOptimizationPyOptSparse
 import floris.tools.optimization.pyoptsparse as opt
 
-import flowers_interface as flow
-import layout
+import model as set
 import tools as tl
 
 """
@@ -39,7 +38,7 @@ if __name__ == "__main__":
     wind_rose = tl.load_wind_rose(1)
 
     # Number of turbines
-    n_turb = 31
+    n_turb = 1
 
     # Wind farm boundaries
     boundaries = [
@@ -110,43 +109,22 @@ if __name__ == "__main__":
     layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=n_turb, idx=int(sys.argv[1]))
 
     # Initialize optimization interface
-    geo = flow.ModelComparison(wind_rose, layout_x, layout_y, model=wake)
-    fi, fli = geo.initialize_optimization(boundaries=boundaries, num_terms=num_terms, wd_resolution=wd_resolution)
+    geo = set.ModelComparison(wind_rose, layout_x, layout_y, model=wake)
+    geo.initialize_optimization(boundaries, num_terms=num_terms, wd_resolution=wd_resolution)
 
     # FLORIS optimization
     if floris_flag:
-        print("Solving FLORIS optimization.")
-        fli.calculate_wake()
-        prob = LayoutOptimizationPyOptSparse(
-            fli,
-            geo.boundaries,
-            freq=geo.freq_floris,
-            solver='SNOPT',
-            storeHistory=hist_file,
-            optOptions={'iPrint': -1, 'Print file': print_floris_name, 'Summary file': summary_floris_name},
-            timeLimit=86400,
-        )
-        sol = prob.optimize()
-        geo.save_floris_solution(sol, history=hist_file)
+        geo.run_floris_optimization(
+            history_file=hist_file,
+            output_file=summary_floris_name
+            )
 
     # FLOWERS optimization
     if flowers_flag:
-        print("Solving FLOWERS optimization.")
-        model = layout.LayoutOptimization(fi, geo.boundaries)
-        tmp = opt.optimization.Optimization(
-            model=model, 
-            solver='SNOPT', 
-            storeHistory=hist_file,
-            optOptions={
-                'iPrint': -2, 
-                'Print file': print_flowers_name, 
-                'Summary file': summary_flowers_name,
-                "Major feasibility tolerance": 1e-3
-                },
-            timeLimit=86400,
-        )
-        sol = tmp.optimize()
-        geo.save_flowers_solution(sol, history=hist_file)
+        geo.run_flowers_optimization(
+            history_file=hist_file,
+            output_file=summary_flowers_name
+            )
 
     # Save results
-    pickle.dump(geo, open(file_name,'wb'))
+    # pickle.dump(geo, open(file_name,'wb'))

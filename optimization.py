@@ -63,8 +63,6 @@ print_file2 = 'output/snopt_flowers_print_test.out'
 geo = flow.ModelComparison(wind_rose, layout_x, layout_y)
 fi, fli = geo.initialize_optimization(boundaries=boundaries, num_terms=37, wd_resolution=5.0)
 
-# FLORIS optimization TODO: why is calculate_wake() not working?
-fli.calculate_wake()
 prob = LayoutOptimizationPyOptSparse(fli, geo.boundaries, freq=geo.freq_floris, solver='SNOPT', storeHistory=hist_file, optOptions={'iPrint': -1, 'Print file': print_file1, 'Summary file': summary_file1})
 sol = prob.optimize()
 geo.save_floris_solution(sol, history=hist_file)

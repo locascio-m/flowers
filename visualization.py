@@ -9,6 +9,222 @@ import numpy as np
 import tools as tl
 
 
+###########################################################################
+# Wind rose methods
+###########################################################################
+
+def plot_wind_rose(
+        wind_rose,
+        ax=None,
+        color_map="viridis_r",
+        ws_right_edges=np.array([5, 10, 15, 20, 25]),
+        wd_bins=np.arange(0, 360, 15.0),
+        legend_kwargs={},
+    ):
+        """
+        Plots a wind rose showing the frequency of occurance
+        of the specified wind direction and wind speed bins. If no axis is
+        provided, a new one is created. (Copied from FLORIS)
+
+        Args:
+            ax (:py:class:`matplotlib.pyplot.axes`, optional): The figure axes
+                on which the wind rose is plotted. Defaults to None.
+            color_map (str, optional): Colormap to use. Defaults to 'viridis_r'.
+            ws_right_edges (np.array, optional): The upper bounds of the wind
+                speed bins (m/s). The first bin begins at 0. Defaults to
+                np.array([5, 10, 15, 20, 25]).
+            wd_bins (np.array, optional): The wind direction bin centers used
+                for plotting (deg). Defaults to np.arange(0, 360, 15.).
+            legend_kwargs (dict, optional): Keyword arguments to be passed to
+                ax.legend().
+
+        Returns:
+            :py:class:`matplotlib.pyplot.axes`: A figure axes object containing
+            the plotted wind rose.
+
+        """
+        # Resample data onto bins
+        wr = wind_rose.copy(deep=True)
+        df_plot = tl.resample_wind_direction(wr, wd=wd_bins)
+
+        # Make labels for wind speed based on edges
+        ws_step = ws_right_edges[1] - ws_right_edges[0]
+        ws_labels = ["%d-%d m/s" % (w - ws_step, w) for w in ws_right_edges]
+
+        # Grab the wd_step
+        wd_step = wd_bins[1] - wd_bins[0]
+
+        # Set up figure
+        if ax is None:
+            _, ax = plt.subplots(subplot_kw=dict(polar=True))
+
+        # Get a color array
+        color_array = cm.get_cmap(color_map, len(ws_right_edges))
+
+        for wd_idx, wd in enumerate(wd_bins):
+            rects = list()
+            df_plot_sub = df_plot[df_plot.wd == wd]
+            for ws_idx, ws in enumerate(ws_right_edges[::-1]):
+                plot_val = df_plot_sub[
+                    df_plot_sub.ws <= ws
+                ].freq_val.sum()  # Get the sum of frequency up to this wind speed
+                rects.append(
+                    ax.bar(
+                        np.radians(wd),
+                        plot_val,
+                        width=0.9 * np.radians(wd_step),
+                        color=color_array(ws_idx),
+                        edgecolor="k",
+                    )
+                )
+            # break
+
+        # Configure the plot
+        ax.legend(reversed(rects), ws_labels, **legend_kwargs)
+        ax.set_theta_direction(-1)
+        ax.set_theta_offset(np.pi / 2.0)
+        ax.set_theta_zero_location("N")
+        ax.set_xticklabels(["N", "NE", "E", "SE", "S", "SW", "W", "NW"])
+        ax.set_yticklabels([])
+
+        return ax
+
+###########################################################################
+# Layout methods
+###########################################################################
+
+def plot_layout(layout_x, layout_y, D=126.0, norm=True, ax=None):
+    """
+    Plot a wind farm layout. The turbine markers are properly scaled
+    relative to the domain.
+
+    Args:
+        layout_x (numpy.array(float)): x-positions of each turbine [m]
+        layout_y (numpy.array(float)): y-positions of each turbine [m]
+        D (float): rotor diameter [m]
+        norm (bool): dictates whether the plot should be scaled by
+            rotor diameter. Defaults to True.
+        ax (:py:class:`matplotlib.pyplot.axes`, optional): axis to
+            plot layout
+
+    Returns:
+        ax (:py:class:`matplotlib.pyplot.axes`, optional): axis 
+            after plotting and formatting
+
+    """
+
+    if ax is None:
+        _, ax = plt.subplots()
+    
+    if norm:
+        xx = layout_x/D
+        yy = layout_y/D
+        r = 0.5
+        xlab = 'x/D'
+        ylab = 'y/D'
+
+    else:
+        xx = layout_x
+        yy = layout_x
+        r = D/2
+        xlab = 'x [m]'
+        ylab = 'y [m]'
+
+    ax.scatter(xx, yy, s=0.01)
+    for x, y in zip(xx, yy):
+        ax.add_patch(plt.Circle((x, y), r))
+    ax.set(xlabel=xlab, ylabel=ylab, aspect='equal')
+    ax.grid()
+
+    return ax
+
+def plot_optimal_layout(
+    boundaries=[], 
+    x_final=[], 
+    y_final=[], 
+    x_init=[], 
+    y_init=[], 
+    D=126.0,
+    norm=True, 
+    ax=None
+    ):
+    """
+    Plot the initial and final solution of a layout optimization study.
+    The turbine markers are properly scaled relative to the domain.
+
+    Args:
+        boundaries (list(tuple)): boundary vertices in the form
+                [(x0,y0), (x1,y1), ... , (xN,yN)]
+        x_final (numpy.array(float)): x-positions of each turbine
+            in the optimal solution [m]
+        y_final (numpy.array(float)): y-positions of each turbine
+            in the optimal solution [m]
+        x_init (numpy.array(float)): x-positions of each turbine
+            in the initial solution [m]
+        y_init (numpy.array(float)): y-positions of each turbine
+            in the initial solution [m]
+        D (float): rotor diameter [m]
+        norm (bool): dictates whether the plot should be scaled by
+            rotor diameter. Defaults to True.
+        ax (:py:class:`matplotlib.pyplot.axes`, optional): axis to
+            plot layout
+
+    Returns:
+        ax (:py:class:`matplotlib.pyplot.axes`, optional): axis 
+            after plotting and formatting
+
+    """
+
+    if ax is None:
+        _, ax = plt.subplots()
+    
+    if not boundaries:
+        raise ValueError("Must supply boundaries to plot layout.")
+    
+    if not x_final or not x_init or not y_final or not y_init:
+        raise ValueError("Must supply all required layout coordinates.")
+
+    if norm:
+        x0 = x_init/D
+        x1 = x_final/D
+        y0 = y_init/D
+        y1 = y_final/D
+        verts = boundaries / D
+        r = 0.5
+        xlab = 'x/D'
+        ylab = 'y/D'
+
+    else:
+        x0 = x_init
+        x1 = x_final
+        y0 = y_init
+        y1 = y_final
+        verts = boundaries
+        r = D/2
+        xlab = 'x [m]'
+        ylab = 'y [m]'
+
+    # Plot turbine locations
+    ax.scatter(x0, y0, s=0.01)
+    ax.scatter(x1, y1, s=0.01)
+    for x, y in zip(x0, y0):
+        ax.add_patch(plt.Circle((x, y), r), color='b')
+    for x, y in zip(x1, y1):
+        ax.add_patch(plt.Circle((x, y), r), color='r')
+    ax.set(xlabel=xlab, ylabel=ylab, aspect='equal')
+    ax.grid()
+
+    # Plot plant boundary
+    for i in range(len(verts)):
+        if i == len(verts) - 1:
+            ax.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
+        else:
+            ax.plot(
+                [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
+            )
+    
+    return ax
+
 def plot_flow_field(fi, ax, bounds, pts=200, cmin=2, cmax=10):
     """
     Plots a filled contour map of the annually-averaged flow field.
@@ -21,6 +237,7 @@ def plot_flow_field(fi, ax, bounds, pts=200, cmin=2, cmax=10):
         pts: grid resolution (uniform in x and y)
         cmin: minimum wind speed for colorbar [m/s]
         cmax: maximum wind speed for colorbar [m/s]
+
     """
 
     # Enforce that fourier_coefficients() have been computed
@@ -122,127 +339,6 @@ def plot_floris_field(fli, ax, wind_rose, bounds, pts=200, cmin=2, cmax=10):
 
     return im
 
-def plot_layout(layout_x, layout_y, ax=None, D=126.0):
-
-    if ax is None:
-        _, ax = plt.subplots()
-    
-    ax.scatter(layout_x/D, layout_y/D, s=0.01)
-    for x, y in zip(layout_x, layout_y):
-        ax.add_patch(plt.Circle((x/D, y/D), 0.5))
-    ax.set(xlabel="x / D", ylabel="y / D", aspect='equal')
-    ax.grid()
-
-    return ax
-
-def plot_wind_rose(
-        wind_rose,
-        ax=None,
-        color_map="viridis_r",
-        ws_right_edges=np.array([5, 10, 15, 20, 25]),
-        wd_bins=np.arange(0, 360, 15.0),
-        legend_kwargs={},
-    ):
-        """
-        Plots a wind rose showing the frequency of occurance
-        of the specified wind direction and wind speed bins. If no axis is
-        provided, a new one is created. (Copied from FLORIS)
-
-        **Note**: Based on code provided by Patrick Murphy from the University
-        of Colorado Boulder.
-
-        Args:
-            ax (:py:class:`matplotlib.pyplot.axes`, optional): The figure axes
-                on which the wind rose is plotted. Defaults to None.
-            color_map (str, optional): Colormap to use. Defaults to 'viridis_r'.
-            ws_right_edges (np.array, optional): The upper bounds of the wind
-                speed bins (m/s). The first bin begins at 0. Defaults to
-                np.array([5, 10, 15, 20, 25]).
-            wd_bins (np.array, optional): The wind direction bin centers used
-                for plotting (deg). Defaults to np.arange(0, 360, 15.).
-            legend_kwargs (dict, optional): Keyword arguments to be passed to
-                ax.legend().
-
-        Returns:
-            :py:class:`matplotlib.pyplot.axes`: A figure axes object containing
-            the plotted wind rose.
-        """
-        # Resample data onto bins
-        df_plot = tl.resample_wind_direction(wind_rose, wd=wd_bins)
-
-        # Make labels for wind speed based on edges
-        ws_step = ws_right_edges[1] - ws_right_edges[0]
-        ws_labels = ["%d-%d m/s" % (w - ws_step, w) for w in ws_right_edges]
-
-        # Grab the wd_step
-        wd_step = wd_bins[1] - wd_bins[0]
-
-        # Set up figure
-        if ax is None:
-            _, ax = plt.subplots(subplot_kw=dict(polar=True))
-
-        # Get a color array
-        color_array = cm.get_cmap(color_map, len(ws_right_edges))
-
-        for wd_idx, wd in enumerate(wd_bins):
-            rects = list()
-            df_plot_sub = df_plot[df_plot.wd == wd]
-            for ws_idx, ws in enumerate(ws_right_edges[::-1]):
-                plot_val = df_plot_sub[
-                    df_plot_sub.ws <= ws
-                ].freq_val.sum()  # Get the sum of frequency up to this wind speed
-                rects.append(
-                    ax.bar(
-                        np.radians(wd),
-                        plot_val,
-                        width=0.9 * np.radians(wd_step),
-                        color=color_array(ws_idx),
-                        edgecolor="k",
-                    )
-                )
-            # break
-
-        # Configure the plot
-        ax.legend(reversed(rects), ws_labels, **legend_kwargs)
-        ax.set_theta_direction(-1)
-        ax.set_theta_offset(np.pi / 2.0)
-        ax.set_theta_zero_location("N")
-        ax.set_xticklabels(["N", "NE", "E", "SE", "S", "SW", "W", "NW"])
-        ax.set_yticklabels([])
-
-        return ax
-
-def plot_optimal_layout(ax, boundaries, x_final, y_final, x_init, y_init, D):
-    """
-    Plots the initial and final layouts (normalized by rotor radius) 
-        of an optimization study.
-
-    Args:
-        ax: matplotlib axis handle to plot layouts.
-        boundaries (list(float)): A list of the boundary vertices in the form
-            [(x0,y0), (x1,y1), ... , (xN,yN)].
-        x_final (np.array): x-coordinates of final layout.
-        y_final (np.array): y-coordinates of final layout.
-        x_init (np.array): x-coordinates of initial layout.
-        y_init (np.array): y-coordinates of initial layout.
-        D (float): rotor diameter
-    """
-
-    # Plot turbine locations
-    ax.plot(x_init / D, y_init / D, "ob")
-    ax.plot(x_final / D, y_final / D, "or")
-    ax.set(xlabel="x / D", ylabel="y / D", aspect='equal')
-    ax.grid()
-
-    # Plot plant boundary
-    verts = boundaries / D
-    for i in range(len(verts)):
-        if i == len(verts) - 1:
-            ax.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
-        else:
-            ax.plot(
-                [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
-            )
 
 def plot_history(ax, obj, layout, boundaries, D, filename=None, show=True):
     """
