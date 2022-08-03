@@ -475,7 +475,7 @@ class ModelComparison:
         sol = tmp.optimize()
         self._save_flowers_solution(sol, history_file)
         self.opt_flowers = True
-        os.remove(verbose_file)
+        # os.remove(verbose_file)
     
     def run_floris_optimization(
         self, 
