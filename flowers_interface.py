@@ -158,6 +158,7 @@ class Flowers():
         THETA = np.arctan2(Y,X) #+ np.pi
 
         # Critical polar angle of wake edge (as a function of distance from turbine)
+        # TODO: discontinuity?
         theta_c = np.abs(np.arctan(
             (1 / R + self.k * np.sqrt(1 + self.k**2 - R**(-2)))
             / (-self.k / R + np.sqrt(1 + self.k**2 - R**(-2)))

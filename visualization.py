@@ -181,8 +181,8 @@ def plot_optimal_layout(
     if not boundaries:
         raise ValueError("Must supply boundaries to plot layout.")
     
-    if not x_final or not x_init or not y_final or not y_init:
-        raise ValueError("Must supply all required layout coordinates.")
+    # if x_final or not x_init or not y_final or not y_init:
+    #     raise ValueError("Must supply all required layout coordinates.")
 
     if norm:
         x0 = x_init/D
@@ -208,9 +208,9 @@ def plot_optimal_layout(
     ax.scatter(x0, y0, s=0.01)
     ax.scatter(x1, y1, s=0.01)
     for x, y in zip(x0, y0):
-        ax.add_patch(plt.Circle((x, y), r), color='b')
+        ax.add_patch(plt.Circle((x, y), r, color='b'))
     for x, y in zip(x1, y1):
-        ax.add_patch(plt.Circle((x, y), r), color='r')
+        ax.add_patch(plt.Circle((x, y), r, color='r'))
     ax.set(xlabel=xlab, ylabel=ylab, aspect='equal')
     ax.grid()
 

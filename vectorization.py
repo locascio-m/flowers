@@ -17,8 +17,8 @@ n_turb = 31
 num_terms = 181
 
 # Randomize wind farm layout
-xx = np.linspace(0., 6300., 10)
-yy = np.linspace(0., 6300., 10)
+xx = np.linspace(0., 10., 10)
+yy = np.linspace(0., 10., 10)
 layout_x, layout_y = np.meshgrid(xx,yy)
 layout_x = layout_x.flatten()
 layout_y = layout_y.flatten()

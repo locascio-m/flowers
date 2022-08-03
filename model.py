@@ -466,6 +466,7 @@ class ModelComparison:
                 'Print file': verbose_file, 
                 'Summary file': output_file,
                 "Major feasibility tolerance": 1e-3,
+                "Scale option": 1,
                 },
             timeLimit=timer,
         )
@@ -537,7 +538,8 @@ class ModelComparison:
                 'iPrint': -1, 
                 'Print file': verbose_file, 
                 'Summary file': output_file,
-                "Major feasibility tolerance": 1e-3},
+                "Major feasibility tolerance": 1e-3,
+                "Scale option": 1},
             timeLimit=timer,
         )
 
@@ -804,7 +806,7 @@ class ModelComparison:
         """Plot initial and FLOWERS optimal layouts on specified axes"""
         if ax is None:
             _, ax = plt.subplots(1,1)
-        vis.plot_optimal_layout(ax, self.boundaries, self.layout_flowers[0], self.layout_flowers[1], self.layout_x, self.layout_y, self.diameter)
+        vis.plot_optimal_layout(ax=ax, boundaries=self.boundaries, x_final=self.layout_flowers[0], y_final=self.layout_flowers[1], x_init=self.layout_x, y_init=self.layout_y, D=self.diameter)
         plt.legend(
             ["Old locations", "New locations"],
             bbox_to_anchor=(0.05, 1.12),
@@ -816,7 +818,7 @@ class ModelComparison:
         """Plot initial and FLORIS optimal layouts on specified axes"""
         if ax is None:
             _, ax = plt.subplots(1,1)
-        vis.plot_optimal_layout(ax, self.boundaries, self.layout_floris[0], self.layout_floris[1], self.layout_x, self.layout_y, self.diameter)
+        vis.plot_optimal_layout(ax=ax, boundaries=self.boundaries, x_final=self.layout_floris[0], y_final=self.layout_floris[1], x_init=self.layout_x, y_init=self.layout_y, D=self.diameter)
         plt.legend(
             ["Old locations", "New locations"],
             bbox_to_anchor=(0.05, 1.12),
