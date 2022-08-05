@@ -145,7 +145,10 @@ class LayoutOptimization:
                 boundary_con[i] *= -1.0
 
         return boundary_con
-    
+
+    def analytic_gradients(self):
+        return AnalyticGradients(self)
+
     def get_optimal_layout(self, sol):
         locsx = _unnorm(sol.getDVs()["x"], self.xmin, self.xmax)
         locsy = _unnorm(sol.getDVs()["y"], self.ymin, self.ymax)
@@ -167,3 +170,13 @@ class LayoutOptimization:
     @property
     def rotor_diameter(self):
         return self.fi.D
+
+class AnalyticGradients:
+    # positions: dictionary of design variable values
+    # values: dictionary of objective and constraint values
+    # returns: nested dictionary of gradient with respect to each variable for objective and constraints
+    def __init__(self, opt):
+        self.opt = opt
+
+    def __call__(self, positions, values):
+        return None

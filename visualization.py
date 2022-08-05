@@ -2,6 +2,7 @@
 
 # Michael LoCascio
 
+import matplotlib.animation as animation
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -208,10 +209,13 @@ def plot_optimal_layout(
     ax.scatter(x0, y0, s=0.01)
     ax.scatter(x1, y1, s=0.01)
     for x, y in zip(x0, y0):
-        ax.add_patch(plt.Circle((x, y), r, color='b'))
+        ax.add_patch(plt.Circle((x, y), r, color='#1f77b4'))
     for x, y in zip(x1, y1):
-        ax.add_patch(plt.Circle((x, y), r, color='r'))
+        ax.add_patch(plt.Circle((x, y), r, color='#ff7f0e'))
     ax.set(xlabel=xlab, ylabel=ylab, aspect='equal')
+    ax.legend(['Initial','Final'],markerscale=50)
+    # leg.legendHandles[0]._legmarker.set_markersize(6)
+    # leg.legendHandles[1]._legmarker.set_markersize(6)
     ax.grid()
 
     # Plot plant boundary
@@ -224,6 +228,170 @@ def plot_optimal_layout(
             )
     
     return ax
+
+###########################################################################
+# Optimization performance methods
+###########################################################################
+
+def animate_layout_history(
+    filename=None, 
+    layout_x=[], 
+    layout_y=[],
+    boundaries=[], 
+    D=126.0,
+    norm=True, 
+    show=True, 
+):
+    """
+    Animate the history of the wind farm layout. Plots the wind farm
+    layout at each iteration and saves to the given file as an MP4.
+
+    Args:
+        filename (str, '.mp4'): name of animation file 
+        layout_x (tuple(numpy.array)): container of x-positions at each
+                iteration.
+        layout_y (tuple(numpy.array)): container of y-positions at each
+                iteration.
+        boundaries (list(tuple)): boundary vertices in the form
+                [(x0,y0), (x1,y1), ... , (xN,yN)]
+        D (float): rotor diameter [m]
+        norm (bool): dictates whether the plot should be scaled by
+            rotor diameter. Defaults to True.
+        show (bool): dictates whether the animation is displayed before
+            closing. Defaults to True.
+
+    """
+
+    if ax is None:
+        _, ax = plt.subplots()
+    
+    if filename is None:
+        raise ValueError('Must supply file name for layout history animation.')
+
+    if norm:
+        x = layout_x/D
+        y = layout_y/D
+        verts = boundaries/D
+        xlab = 'x/D'
+        ylab = 'y/D' 
+
+    else:
+        x = layout_x
+        y = layout_y
+        verts = boundaries
+        xlab = 'x [m]'
+        ylab = 'y [m]'
+
+    # Layout animation
+    fig, ax = plt.subplots()
+    ax.set(xlabel=xlab, ylabel=ylab, aspect='equal')
+    ax.grid()
+
+    for i in range(len(verts)):
+        if i == len(verts) - 1:
+            ax.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
+        else:
+            ax.plot(
+                [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
+            )
+
+    line, = ax.plot([],[],"o")
+
+    # Function to update turbine positions
+    def animate(i):
+        line.set_data(x[i], y[i])
+        ax.set_title(str(i))
+        return line,
+
+    # Animation
+    ani = animation.FuncAnimation(fig, animate, frames=len(x), repeat=False)
+    ani.save(filename)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+def plot_convergence_history(
+    aep=[],
+    optimality=[],
+    feasibility=[],
+    ax_aep=None,
+    ax_opt=None,
+    ax_feas=None,
+):
+    """
+    Plots the convergence history of AEP (objective function),
+    optimality, and feasibility. Axes should be supplied for any
+    metrics that are to be plotted.
+
+    Args:
+        aep (list(float)): AEP at each major iteration
+        optimality (list(float)): SNOPT optimality at each major iteration
+        feasibility (list(float)): SNOPT feasibility at each major iteration
+        ax_aep (:py:class:`matplotlib.pyplot.axes`, optional): axis to
+            plot AEP history
+        ax_opt (:py:class:`matplotlib.pyplot.axes`, optional): axis to
+            plot optimality history
+        ax_feas (:py:class:`matplotlib.pyplot.axes`, optional): axis to
+            plot feasibility history
+
+    """
+
+    # Objective plot
+    if aep:
+        if ax_aep is None:
+            _, ax_aep = plt.subplots()
+        
+        ax_aep.plot([elem / 1e9 for elem in aep])
+        ax_aep.set(xlabel='Iteration', ylabel="AEP [GWh]")
+        ax_aep.grid(True)
+    
+    # Optimality plot
+    if optimality:
+        if ax_opt is None:
+            _, ax_opt = plt.subplots()
+        
+        ax_opt.semilogy(optimality)
+        ax_opt.set(xlabel='Iteration', ylabel="Optimality [-]")
+        ax_opt.grid(True)
+
+    # Feasibility plot
+    if feasibility:
+        if ax_feas is None:
+            _, ax_feas = plt.subplots()
+        
+        ax_feas.semilogy(feasibility)
+        ax_feas.set(xlabel='Iteration', ylabel="Feasibility [-]")
+        ax_feas.grid(True)
+
+
+## Legacy functions
+
+def plot_constraints(ax_boundary, ax_spacing, boundary_constraint, spacing_constraint):
+    """
+    Plots the convergence history of the objective function and the wind farm
+        layout (optional)
+
+    Args:
+        ax: matplotlib axis handle to plot AEP history.
+        obj (list(float)): A list of AEP at each major iteration.
+        layout (tuple(float)): A list of wind farm (x,y) layout at each major iteration.
+        boundaries (list(float)): A list of the boundary vertices in the form
+            [(x0,y0), (x1,y1), ... , (xN,yN)].
+        D (float): rotor diameter
+        filename (str): name of .mp4 animation of layout progression.
+    """
+
+    # Boundary constraint plot
+    for n in range(len(boundary_constraint)):
+        ax_boundary.plot(boundary_constraint[n], alpha=0.3)
+    ax_boundary.set(xlabel='Iteration', ylabel="Boundary Constraint")
+    ax_boundary.grid()
+
+    # Spacing constraint plot
+    ax_spacing.plot(spacing_constraint)
+    ax_spacing.set(xlabel='Iteration', ylabel="Spacing Constraint")
+    ax_spacing.grid()
 
 def plot_flow_field(fi, ax, bounds, pts=200, cmin=2, cmax=10):
     """
@@ -326,7 +494,7 @@ def plot_floris_field(fli, ax, wind_rose, bounds, pts=200, cmin=2, cmax=10):
     x2_mesh = hor_plane.df.x2.values.reshape(hor_plane.resolution[1], hor_plane.resolution[0])
     u_mesh = hor_plane.df.u.values.reshape(hor_plane.resolution[1], hor_plane.resolution[0])
 
-    # Mask rotor swept areas (TODO add rotor diameter variable)
+    # Mask rotor swept areas (add rotor diameter variable)
     zz = np.logical_or(np.isnan(u_mesh),np.sqrt((x1_mesh-fli.floris.farm.layout_x[0])**2 + (x2_mesh-fli.floris.farm.layout_y[0])**2) < 126/2)
     for j in range(len(fli.floris.farm.layout_x)-1):
         zz = np.logical_or(zz, np.sqrt((x1_mesh-fli.floris.farm.layout_x[j+1])**2 + (x2_mesh-fli.floris.farm.layout_y[j+1])**2) < 126/2)
@@ -338,109 +506,3 @@ def plot_floris_field(fli, ax, wind_rose, bounds, pts=200, cmin=2, cmax=10):
         ax.scatter(fli.floris.farm.layout_x[j],fli.floris.farm.layout_y[j],c='white')
 
     return im
-
-
-def plot_history(ax, obj, layout, boundaries, D, filename=None, show=True):
-    """
-    Plots the convergence history of the objective function and the wind farm
-        layout (optional)
-
-    Args:
-        ax: matplotlib axis handle to plot AEP history.
-        obj (list(float)): A list of AEP at each major iteration.
-        layout (tuple(float)): A list of wind farm (x,y) layout at each major iteration.
-        boundaries (list(float)): A list of the boundary vertices in the form
-            [(x0,y0), (x1,y1), ... , (xN,yN)].
-        D (float): rotor diameter
-        filename (str): name of .mp4 animation of layout progression.
-    """
-
-    import matplotlib.animation as animation
-
-    # Objective plot
-    ax.plot([elem / 1e9 for elem in obj])
-    ax.set(xlabel='Iteration', ylabel="AEP [GWh]")
-    ax.grid()
-
-    # Layout animation
-    if filename != None:
-        fig, ax1 = plt.subplots()
-        ax1.set(xlabel="x / D", ylabel="y / D", aspect='equal')
-        ax1.grid()
-
-        verts = boundaries / D
-        for i in range(len(verts)):
-            if i == len(verts) - 1:
-                ax1.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
-            else:
-                ax1.plot(
-                    [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
-                )
-
-        line, = ax1.plot([],[],"ob")
-
-        # Function to update turbine positions
-        def animate(i):
-            # Plot last two steps transparently
-            line.set_data(layout[0][i] / D, layout[1][i] / D)
-            ax1.set_title(str(i))
-            return line,
-
-        # Animation
-        ani = animation.FuncAnimation(fig, animate, frames=len(layout[0]), repeat=False)
-        ani.save(filename)
-        if show:
-            plt.show()
-        else:
-            plt.close(fig)
-
-def plot_optimality(ax_opt, ax_feas, optimality, feasibility):
-    """
-    Plots the convergence history of the objective function and the wind farm
-        layout (optional)
-
-    Args:
-        ax: matplotlib axis handle to plot AEP history.
-        obj (list(float)): A list of AEP at each major iteration.
-        layout (tuple(float)): A list of wind farm (x,y) layout at each major iteration.
-        boundaries (list(float)): A list of the boundary vertices in the form
-            [(x0,y0), (x1,y1), ... , (xN,yN)].
-        D (float): rotor diameter
-        filename (str): name of .mp4 animation of layout progression.
-    """
-
-    # Optimality plot
-    ax_opt.semilogy(optimality)
-    ax_opt.set(xlabel='Iteration', ylabel="Optimality")
-    ax_opt.grid()
-
-    # Feasibility plot
-    ax_feas.semilogy(feasibility)
-    ax_feas.set(xlabel='Iteration', ylabel="Feasibility")
-    ax_feas.grid()
-
-def plot_constraints(ax_boundary, ax_spacing, boundary_constraint, spacing_constraint):
-    """
-    Plots the convergence history of the objective function and the wind farm
-        layout (optional)
-
-    Args:
-        ax: matplotlib axis handle to plot AEP history.
-        obj (list(float)): A list of AEP at each major iteration.
-        layout (tuple(float)): A list of wind farm (x,y) layout at each major iteration.
-        boundaries (list(float)): A list of the boundary vertices in the form
-            [(x0,y0), (x1,y1), ... , (xN,yN)].
-        D (float): rotor diameter
-        filename (str): name of .mp4 animation of layout progression.
-    """
-
-    # Boundary constraint plot
-    for n in range(len(boundary_constraint)):
-        ax_boundary.plot(boundary_constraint[n], alpha=0.3)
-    ax_boundary.set(xlabel='Iteration', ylabel="Boundary Constraint")
-    ax_boundary.grid()
-
-    # Spacing constraint plot
-    ax_spacing.plot(spacing_constraint)
-    ax_spacing.set(xlabel='Iteration', ylabel="Spacing Constraint")
-    ax_spacing.grid()

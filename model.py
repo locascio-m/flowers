@@ -802,69 +802,221 @@ class ModelComparison:
         print("============================")
 
     def plot_flowers_layout(self, ax=None):
-        """Plot initial and FLOWERS optimal layouts on specified axes"""
+        """
+        Plot the initial and optimal layouts of the FLOWERS
+        optimization.
+
+        Args:
+            ax_aep (:py:class:`matplotlib.pyplot.axes`, optional): axis to
+                plot layouts
+
+        """
         if ax is None:
             _, ax = plt.subplots(1,1)
-        vis.plot_optimal_layout(ax=ax, boundaries=self.boundaries, x_final=self.layout_flowers[0], y_final=self.layout_flowers[1], x_init=self.layout_x, y_init=self.layout_y, D=self.diameter)
-        plt.legend(
-            ["Old locations", "New locations"],
-            bbox_to_anchor=(0.05, 1.12),
+
+        vis.plot_optimal_layout(
+            ax=ax, 
+            boundaries=self.boundaries, 
+            x_final=self.layout_flowers[0], 
+            y_final=self.layout_flowers[1], 
+            x_init=self.layout_x, 
+            y_init=self.layout_y, 
+            D=self.diameter,
         )
+        # plt.legend(
+        #     ["Initial", "Final"],
+            #bbox_to_anchor=(0.05, 1.12),
+        # )
         ax.set(title="FLOWERS")
         return ax
     
     def plot_floris_layout(self, ax=None):
-        """Plot initial and FLORIS optimal layouts on specified axes"""
+        """
+        Plot the initial and optimal layouts of the FLORIS
+        optimization.
+
+        Args:
+            ax_aep (:py:class:`matplotlib.pyplot.axes`, optional): axis to
+                plot layouts
+
+        """
         if ax is None:
             _, ax = plt.subplots(1,1)
-        vis.plot_optimal_layout(ax=ax, boundaries=self.boundaries, x_final=self.layout_floris[0], y_final=self.layout_floris[1], x_init=self.layout_x, y_init=self.layout_y, D=self.diameter)
-        plt.legend(
-            ["Old locations", "New locations"],
-            bbox_to_anchor=(0.05, 1.12),
+
+        vis.plot_optimal_layout(
+            ax=ax, 
+            boundaries=self.boundaries, 
+            x_final=self.layout_floris[0], 
+            y_final=self.layout_floris[1], 
+            x_init=self.layout_x, 
+            y_init=self.layout_y, 
+            D=self.diameter,
         )
+        # plt.legend(
+        #     ["Initial", "Final"],
+            #bbox_to_anchor=(0.05, 1.12),
+        # )
         ax.set(title="FLORIS")
         return ax
     
     def plot_optimal_layouts(self):
-        """Plot initial, FLOWERS, and FLORIS optimal layouts on specified axes"""
+        """
+        Plot the initial and optimal layouts of both the
+        FLOWERS and FLORIS optimization.
 
-        _, (ax0, ax1) = plt.subplots(1,2, figsize=(10,5))
-        vis.plot_optimal_layout(ax0, self.boundaries, self.layout_flowers[0], self.layout_flowers[1], self.layout_x, self.layout_y, self.diameter)
-        vis.plot_optimal_layout(ax1, self.boundaries, self.layout_floris[0], self.layout_floris[1], self.layout_x, self.layout_y, self.diameter)
-        plt.legend(
-            ["Old locations", "New locations"],
-            bbox_to_anchor=(0.38, 1.1),
-            ncol=2,
+        """
+
+        fig, (ax0, ax1) = plt.subplots(1,2)
+        vis.plot_optimal_layout(
+            ax=ax0, 
+            boundaries=self.boundaries, 
+            x_final=self.layout_flowers[0], 
+            y_final=self.layout_flowers[1], 
+            x_init=self.layout_x, 
+            y_init=self.layout_y, 
+            D=self.diameter,
+        )
+        vis.plot_optimal_layout(
+            ax=ax1, 
+            boundaries=self.boundaries, 
+            x_final=self.layout_floris[0], 
+            y_final=self.layout_floris[1], 
+            x_init=self.layout_x, 
+            y_init=self.layout_y, 
+            D=self.diameter,
         )
         ax0.set_title('FLOWERS')
         ax1.set_title('FLORIS')
+        fig.tight_layout()
+
+        # plt.legend(
+        #     ["Initial", "Final"],
+            #bbox_to_anchor=(0.38, 1.1),
+            #ncol=2,
+        # )
     
-    def plot_flowers_history(self, ax=None, animate=None):
-        """Plot history of FLOWERS optimization AEP and layout (optional)"""
-        if ax is None:
-            _, ax = plt.subplots(1,1)
-        vis.plot_history(ax, self.flowers_solution['aep'], self.flowers_solution['layout'], self.boundaries, self.diameter, "flowers.mp4", animate)
-        ax.set(title="FLOWERS")
-        return ax
+    def plot_flowers_history(self, animate_file=None, show=False):
+        """
+        Plot the AEP, optimality, and feasibility history of the
+        FLOWERS optimization.
     
-    def plot_floris_history(self, ax=None, animate=None):
-        """Plot history of FLORIS optimization AEP and layout (optional)"""
-        if ax is None:
-            _, ax = plt.subplots(1,1)
-        vis.plot_history(ax, self.floris_solution['aep'], self.floris_solution['layout'], self.boundaries, self.diameter, "floris.mp4", animate)
-        ax.set(title="FLORIS")
-        return ax
+        Args:
+            animate_file (str, optional): file name for layout animation,
+                if desired.
+            show (bool, optional): dictates whether the layout animation is
+                displayed before closing. Defaults to False.
+
+        """
+
+        fig, (ax0, ax1, ax2) = plt.subplots(1,3)
+        vis.plot_convergence_history(
+            aep=self.flowers_solution['aep'],
+            optimality=self.flowers_solution['optimality'],
+            feasibility=self.flowers_solution['feasibility'],
+            ax_aep=ax0,
+            ax_opt=ax1,
+            ax_feas=ax2
+        )
+        fig.suptitle("FLOWERS")
+        fig.tight_layout()
+
+        if animate_file is not None:
+            vis.animate_layout_history(
+                filename=animate_file,
+                layout_x=self.flowers_solution['layout'][0],
+                layout_y=self.flowers_solution['layout'][1],
+                boundaries=self.boundaries,
+                D=self.diameter,
+                show=show,
+            )
+    
+    def plot_floris_history(self, animate_file=None, show=False):
+        """
+        Plot the AEP, optimality, and feasibility history of the
+        FLORIS optimization.
+    
+        Args:
+            animate_file (str, optional): file name for layout animation,
+                if desired.
+            show (bool, optional): dictates whether the layout animation is
+                displayed before closing. Defaults to False.
+
+        """
+
+        fig, (ax0, ax1, ax2) = plt.subplots(1,3)
+        vis.plot_convergence_history(
+            aep=self.floris_solution['aep'],
+            optimality=self.floris_solution['optimality'],
+            feasibility=self.floris_solution['feasibility'],
+            ax_aep=ax0,
+            ax_opt=ax1,
+            ax_feas=ax2
+        )
+        fig.suptitle("FLORIS")
+        fig.tight_layout()
+
+        if animate_file is not None:
+            vis.animate_layout_history(
+                filename=animate_file,
+                layout_x=self.floris_solution['layout'][0],
+                layout_y=self.floris_solution['layout'][1],
+                boundaries=self.boundaries,
+                D=self.diameter,
+                show=show,
+            )
     
     def plot_optimization_histories(self, flowers_mov=None, floris_mov=None):
         """
-        Plot history of FLOWERS and FLORIS optimizations, including objective function
-            convergence and animations of layout development.
+        Plot the AEP, optimality, and feasibility history of the
+        FLOWERS and FLORIS optimization.
+    
+        Args:
+            flowers_mov (str, optional): file name for FLOWERS layout animation,
+                if desired.
+            floris_mov (str, optional): file name for FLORIS layout animation,
+                if desired.
+
         """
-        _, (ax0, ax1) = plt.subplots(1,2, figsize=(10,5))
-        vis.plot_history(ax0, self.flowers_solution['aep'], self.flowers_solution['layout'], self.boundaries, self.diameter, flowers_mov, show=False)
-        vis.plot_history(ax1, self.floris_solution['aep'], self.floris_solution['layout'], self.boundaries, self.diameter, floris_mov, show=False)
-        ax0.set_title('FLOWERS')
-        ax1.set_title('FLORIS')
+
+        fig, ((ax0, ax1, ax2),(ax3, ax4, ax5)) = plt.subplots(2,3)
+        
+        vis.plot_convergence_history(
+            aep=self.floris_solution['aep'],
+            optimality=self.floris_solution['optimality'],
+            feasibility=self.floris_solution['feasibility'],
+            ax_aep=ax0,
+            ax_opt=ax1,
+            ax_feas=ax2
+        )
+        vis.plot_convergence_history(
+            aep=self.floris_solution['aep'],
+            optimality=self.floris_solution['optimality'],
+            feasibility=self.floris_solution['feasibility'],
+            ax_aep=ax3,
+            ax_opt=ax4,
+            ax_feas=ax5
+        )
+        ax1.set_title("FLOWERS")
+        ax4.set_title("FLORIS")
+        fig.tight_layout()
+
+        if flowers_mov is not None:
+            vis.animate_layout_history(
+                filename=flowers_mov,
+                layout_x=self.flowers_solution['layout'][0],
+                layout_y=self.flowers_solution['layout'][1],
+                boundaries=self.boundaries,
+                D=self.diameter,
+                show=False,
+            )
+            vis.animate_layout_history(
+                filename=floris_mov,
+                layout_x=self.floris_solution['layout'][0],
+                layout_y=self.floris_solution['layout'][1],
+                boundaries=self.boundaries,
+                D=self.diameter,
+                show=False,
+            )
 
     ###########################################################################
     # Internal tools

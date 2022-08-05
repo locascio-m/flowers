@@ -73,7 +73,16 @@ def random_layout(boundaries=[], n_turb=0, D=126.0, min_dist=2.0, idx=None):
 
 def load_layout(name):
     """
-    TODO: fill in description
+    Load a known turbine layout.
+    TODO: add loading default layout and boundary.
+
+    Args:
+        name (str): name of layout. Currently supported options are:
+            'iea'
+    
+    Returns:
+        layout_x (np.array): x-positions of each turbine
+        layout_y (np.array): y-positions of each turbine
 
     """
 
