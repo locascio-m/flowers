@@ -17,8 +17,9 @@ multistart.py script.
 """
 
 # Number of random cases
-multi = 2
-both = True
+multi = 50
+flowers_flag = True
+floris_flag = False
 
 # Initialize collected data
 aep_flowers = np.zeros(multi)
@@ -47,37 +48,34 @@ fig = plt.figure(figsize=(6,4.75))
 ax3 = fig.add_subplot(projection='polar')
 
 # Plot generic initial layout
-# layout_x = np.array([0, 666, 1333, 2000, 0, 622, 1245, 1867, 0, 578, 1155, 1733, 0, 533, 1067, 1600])
-# layout_y = np.array([0, 0, 0, 0, 667, 622, 577, 533, 1333, 1244, 1155, 1067, 2000, 1867, 1734, 1600])
-# ax2.plot(layout_x, layout_y, "o", markersize=13.5, color='#fde725')
+layout_x, layout_y = tl.load_layout('iea')
+vis.plot_layout(layout_x, layout_y, ax=ax2)
 
 for i in range(multi):
 
     # Read data from each case
-    file_name = 'solutions/multi' + str(i) + '.p'
-    sol = pickle.load(open(file_name,'rb'))
-    time_flowers[i] = sol.flowers_solution['time']
-    aep_flowers[i] = sol.aep_flowers
-    time_floris[i] = sol.floris_solution['time']
-    aep_floris[i] = sol.aep_floris
-
-    # Plot optimal layouts
-    ax0.plot(sol.flowers_layout[0]/sol.diameter, sol.flowers_layout[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
-    ax00.plot(sol.floris_layout[0]/sol.diameter, sol.floris_layout[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
-
-    if i == 1:
-        sol.show_optimization_comparison(stats=True)
-        sol.plot_optimal_layouts()
-        # sol.plot_optimization_histories(flowers_mov="flowers_9.mp4", floris_mov="floris_9.mp4")
+    if flowers_flag:
+        file_name = 'solutions/flowers' + str(i) + '.p'
+        sol = pickle.load(open(file_name,'rb'))
+        time_flowers[i] = sol.flowers_solution['time']
+        aep_flowers[i] = sol.aep_flowers
+        ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
+    if floris_flag:
+        file_name = 'solutions/floris' + str(i) + '.p'
+        sol = pickle.load(open(file_name,'rb'))
+        time_floris[i] = sol.floris_solution['time']
+        aep_floris[i] = sol.aep_floris
+        ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
 
 # Plot optimal AEP and solver time
-ax1.plot(time_flowers, aep_flowers/1e9, 'o', color='#440154')
-ax11.plot(time_floris, aep_floris/1e9, 'o', color='#440154')
-
-ax1.set(xlabel="Time (s)", ylabel="AEP (GWh)", xlim=0, title='FLOWERS')
-ax1.grid(True)
-ax11.set(xlabel="Time (s)", ylabel="AEP (GWh)", xlim=0, title="FLORIS")
-ax11.grid(True)
+if flowers_flag:
+    ax1.plot(time_flowers, aep_flowers/1e9, 'o', color='#440154')
+    ax1.set(xlabel="Time (s)", ylabel="AEP (GWh)", xlim=0, title='FLOWERS')
+    ax1.grid(True)
+if floris_flag:
+    ax11.plot(time_floris, aep_floris/1e9, 'o', color='#440154')
+    ax11.set(xlabel="Time (s)", ylabel="AEP (GWh)", xlim=0, title="FLORIS")
+    ax11.grid(True)
 
 # Plot wind farm boundary
 verts = sol.boundaries/sol.diameter

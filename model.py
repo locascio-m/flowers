@@ -462,7 +462,6 @@ class ModelComparison:
             solver=solver,
             storeHistory=history_file,
             optOptions={
-                'iPrint': -2, 
                 'Print file': verbose_file, 
                 'Summary file': output_file,
                 "Major feasibility tolerance": 1e-3,

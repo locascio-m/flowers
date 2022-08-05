@@ -63,7 +63,7 @@ if __name__ == "__main__":
     ]
 
     # Wind rose resolution
-    num_terms = 37
+    num_terms = 7
     wd_resolution = 5.0
     
     ### Output definitions
@@ -123,7 +123,8 @@ if __name__ == "__main__":
     if flowers_flag:
         geo.run_flowers_optimization(
             history_file=hist_file,
-            output_file=summary_flowers_name
+            output_file=summary_flowers_name,
+            timer=7200,
             )
 
     # Save results
