@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
+import tools as tl
 import visualization as vis
 
 """
@@ -49,13 +50,13 @@ ax3 = fig.add_subplot(projection='polar')
 
 # Plot generic initial layout
 layout_x, layout_y = tl.load_layout('iea')
-vis.plot_layout(layout_x, layout_y, ax=ax2)
+vis.plot_layout(layout_x, layout_y)
 
 for i in range(multi):
 
     # Read data from each case
     if flowers_flag:
-        file_name = 'solutions/flowers' + str(i) + '.p'
+        file_name = 'solutions/flowers_' + str(i) + '.p'
         sol = pickle.load(open(file_name,'rb'))
         time_flowers[i] = sol.flowers_solution['time']
         aep_flowers[i] = sol.aep_flowers

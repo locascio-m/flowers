@@ -102,7 +102,7 @@ class LayoutOptimization:
         return optProb
 
     def add_con_group(self, optProb):
-        optProb.addConGroup("boundary_con", self.nturbs, upper=0.0, scale=self.scale_con)
+        optProb.addConGroup("boundary_con", self.nturbs, upper=-1.0, scale=self.scale_con)
         optProb.addConGroup("spacing_con", 1, upper=0.0, scale=self.scale_con)
 
         return optProb
@@ -140,7 +140,7 @@ class LayoutOptimization:
         boundary_con = np.zeros(self.nturbs)
         for i in range(self.nturbs):
             loc = Point(self.x[i], self.y[i])
-            boundary_con[i] = loc.distance(self.boundary_line)
+            boundary_con[i] = loc.distance(self.boundary_line) #NaNsafe, or 1 to 5 m inside boundary
             if self.boundary_polygon.contains(loc)==True:
                 boundary_con[i] *= -1.0
 

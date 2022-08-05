@@ -56,9 +56,7 @@ class Flowers():
         wr = tl.resample_average_ws_by_wd(wr)
 
         # Transform wind direction to polar angle 
-        # TODO: verify angle calculation
-        wr["wd"] = 90 - wr.wd
-        # wr["wd"] = np.remainder(450 - wr.wd, 360)
+        wr["wd"] = np.remainder(450 - wr.wd, 360)
         wr.sort_values("wd", inplace=True)
 
         # Look up thrust coefficient for each wind direction bin
@@ -99,7 +97,6 @@ class Flowers():
         """
 
         # Power component from freestream
-        # TODO: only store a_free[0]
         p0 = self.fs.a_free[0] * np.pi
 
         # Reshape relative positions into symmetric 2D array
@@ -115,13 +112,38 @@ class Flowers():
 
         # Sum power for each turbine 
         # TODO: allow AEP for a single turbine
-        p_sum = np.sum(p, axis=0)
+        p_sum = np.sum(p, axis=1)
         aep = np.sum(tl.cp_lookup(p0 - p_sum)  * (p0 - p_sum)**3)
         aep *= 0.5 * 1.225 * np.pi * self.D**2 / 4 * 8760
         
         return aep
 
-    # TODO: add calculate_field() method
+    def calculate_field(self, X, Y):
+        """
+        Compute flow field speed for a given 2D mesh.
+        
+        Args:
+            aep (float): farm AEP [Wh]
+
+        Returns:
+            aep (float): farm AEP [Wh]
+
+        """
+        u0 = self.fs.a_free[0] * np.pi
+        x = X.flatten()
+        y = Y.flatten()
+        matrix_x = np.reshape(x, (-1,1)) - self.layout_x
+        matrix_y = np.reshape(y, (-1,1)) - self.layout_y
+        matrix_r = np.sqrt(matrix_x**2 + matrix_y**2)
+        # TODO: fix masking
+        du = self._calculate_wake(matrix_x,matrix_y)
+        du = np.ma.masked_where(matrix_r < self.D/2, du)
+        du_sum = np.sum(du, axis=1)
+        u = u0 - du_sum
+        
+        u = np.reshape(u, np.shape(X))
+
+        return u
 
     def _calculate_wake(self, X, Y):
         """
@@ -153,9 +175,8 @@ class Flowers():
         Y /= self.D/2
 
         # Convert to polar coordinates
-        # TODO: verify angle here
         R = np.sqrt(X**2 + Y**2)
-        THETA = np.arctan2(Y,X) #+ np.pi
+        THETA = np.arctan2(Y,X) + np.pi
 
         # Critical polar angle of wake edge (as a function of distance from turbine)
         # TODO: discontinuity?
@@ -171,8 +192,8 @@ class Flowers():
 
         # Reshape variables for vectorized calculations (num_turbines, num_field_pts)
         n = np.arange(1, len(self.fs.b_wake))
-        a_wake = np.swapaxes(np.tile(np.expand_dims(self.fs.a_wake[1:], axis=(1,2)),np.shape(R)),0,2)
-        b_wake = np.swapaxes(np.tile(np.expand_dims(self.fs.b_wake[1:], axis=(1,2)),np.shape(R)),0,2)
+        a_wake = np.swapaxes(np.tile(np.expand_dims(self.fs.a_wake[1:], axis=(1,2)),np.shape(R.T)),0,2)
+        b_wake = np.swapaxes(np.tile(np.expand_dims(self.fs.b_wake[1:], axis=(1,2)),np.shape(R.T)),0,2)
         R = np.tile(np.expand_dims(R, axis=2),len(n))
         THETA = np.tile(np.expand_dims(THETA, axis=2),len(n))
         theta_c = np.tile(np.expand_dims(theta_c, axis=2),len(n))

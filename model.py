@@ -425,6 +425,30 @@ class ModelComparison:
                 Should end with '.out'
             timer (int, optional): wall-time limit for optimizer [s].
                 Defaults to 1 day.
+
+        Returns:
+            flowers_solution (dict): stores the quantities of interest from FLOWERS 
+                optimization results:
+                - 'iter' (int): number of major iterations
+                - 'aep' (list(float)): AEP (post-processed with 
+                    specific FLORIS interface) of layout at each major iteration
+                - 'layout' (tuple(numpy.array)): container of farm layout at each
+                    iteration. Calling layout[x/y][iteration] will give a numpy array
+                    of the x- or y-positions of each turbine at that iteration.
+                - 'opt' (list(float)): SNOPT optimality at each major iteration
+                - 'feas' (list(float)): SNOPT feasibility at each major iteration
+                - 'con_bound' (numpy.array): 2D array of the boundary constraint for
+                    each turbine. Calling con_bound[i] outputs the array of the 
+                    distance to the farm boundary (with negative being inside the 
+                    boundary) for turbine 'i'.
+                - 'con_spacing' (list(float)): spacing constraint value at each
+                    major iteration.
+                - 'time' (float): wall-time of optimization study
+                - 'solver_time' (float): time of solver (?)
+                - 'obj_calls' (int): number of AEP function calls
+            layout_flowers (tuple(numpy.array)): array of the x- or
+                y-position of each turbine (x: 0; y: 1)
+            aep_flowers (float): farm AEP [Wh]
         
         """
 
@@ -466,6 +490,7 @@ class ModelComparison:
                 'Summary file': output_file,
                 "Major feasibility tolerance": 1e-3,
                 "Scale option": 1,
+                "Derivative option": 0,
                 },
             timeLimit=timer,
         )
@@ -497,7 +522,28 @@ class ModelComparison:
                 Defaults to 1 day.
 
         Returns:
-            TODO: fill in post-processed information
+            floris_solution (dict): stores the quantities of interest from FLORIS 
+                optimization results:
+                - 'iter' (int): number of major iterations
+                - 'aep' (list(float)): AEP (post-processed with 
+                    specific FLORIS interface) of layout at each major iteration
+                - 'layout' (tuple(numpy.array)): container of farm layout at each
+                    iteration. Calling layout[x/y][iteration] will give a numpy array
+                    of the x- or y-positions of each turbine at that iteration.
+                - 'opt' (list(float)): SNOPT optimality at each major iteration
+                - 'feas' (list(float)): SNOPT feasibility at each major iteration
+                - 'con_bound' (numpy.array): 2D array of the boundary constraint for
+                    each turbine. Calling con_bound[i] outputs the array of the 
+                    distance to the farm boundary (with negative being inside the 
+                    boundary) for turbine 'i'.
+                - 'con_spacing' (list(float)): spacing constraint value at each
+                    major iteration.
+                - 'time' (float): wall-time of optimization study
+                - 'solver_time' (float): time of solver (?)
+                - 'obj_calls' (int): number of AEP function calls
+            layout_floris (tuple(numpy.array)): array of the x- or
+                y-position of each turbine (x: 0; y: 1)
+            aep_floris (float): farm AEP [Wh]
         
         """
 

@@ -5,10 +5,11 @@
 import numpy as np
 import flowers_interface as flow
 import tools as tl
-import time
+import matplotlib.pyplot as plt
+import visualization as vis
 
 # Wind rose (sampled from stored wind roses)
-wind_rose = tl.load_wind_rose(1)
+wind_rose = tl.load_wind_rose(2)
 
 # Number of turbines
 n_turb = 31
@@ -17,18 +18,22 @@ n_turb = 31
 num_terms = 181
 
 # Randomize wind farm layout
-xx = np.linspace(0., 10., 10)
-yy = np.linspace(0., 10., 10)
-layout_x, layout_y = np.meshgrid(xx,yy)
-layout_x = layout_x.flatten()
-layout_y = layout_y.flatten()
+layout_x = 126.*np.array([0., 5., 10.])
+layout_y = np.array([0., 0., 0.])
+xx = np.linspace(-5*126., 16*126., 400)
+yy = np.linspace(-2*126., 2*126., 100)
+X, Y = np.meshgrid(xx,yy)
 
 # Initialize optimization interface
 
 fi = flow.Flowers(wind_rose,layout_x,layout_y,k=0.05,D=126.0)
 fi.fourier_coefficients(num_terms=num_terms)
-t = time.time()
-aep = fi.calculate_aep()
-elapsed = time.time() - t
-print(aep)
-print(elapsed)
+u = fi.calculate_field(X,Y)
+
+fig, ax = plt.subplots(1,1)
+
+im = ax.pcolormesh(X, Y, u, cmap='coolwarm')
+ax.set(aspect='equal')
+vis.plot_wind_rose(wind_rose)
+# ax.plot(fi.layout_x, fi.layout_y, 'ow')
+plt.show()
