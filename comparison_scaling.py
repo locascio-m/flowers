@@ -47,7 +47,7 @@ for i in scales:
     aep_flowers.append(float(sol.aep_flowers)/1e9)
     time_flowers.append(float(sol.flowers_solution['time'])/3600)
     iter_flowers.append(float(sol.flowers_solution['iter']))
-    vis.plot_history(ax40, sol.flowers_solution['aep'], sol.flowers_solution['layout'], sol.boundaries, sol.diameter)
+    ax40.plot([elem / 1e9 for elem in sol.flowers_solution['aep']])
     # vis.plot_constraints(ax_flowers_feas[-1][0], ax_flowers_feas[-1][1], sol.flowers_solution['con_bound'], sol.flowers_solution['con_space'])
     ax = fig3.add_subplot(2,3,idx)
     sol.plot_flowers_layout(ax=ax)
@@ -65,7 +65,7 @@ sol_floris = pickle.load(open(file_name,'rb'))
 ax0.semilogx([1.0], float(sol_floris.aep_floris/1e9), 'o')
 ax1.semilogx([1.0], float(sol_floris.floris_solution['time']/3600), 'o')
 ax2.semilogx([1.0], float(sol_floris.floris_solution['iter']), 'o')
-vis.plot_history(ax41, sol_floris.floris_solution['aep'], sol_floris.floris_solution['layout'], sol_floris.boundaries, sol_floris.diameter)
+ax41.plot([elem / 1e9 for elem in sol_floris.floris_solution['aep']])
 sol_floris.plot_floris_layout()
 ax = plt.gca()
 ax.set(title='FLORIS')
@@ -170,7 +170,7 @@ plt.show()
 #         time_flowers.append(float(sol.flowers_solution['time'])/3600)
 #         iter_flowers.append(float(sol.flowers_solution['iter']))
 
-#         ## TODO: remove this block
+#         ## remove this block
 #         hist = History('output/hist_flowers_' + str(j) + '_scale_' + str(i) + '.hist')
 #         val = hist.getValues(names=['feasibility','optimality','spacing_con','boundary_con'], major=True)
 #         val2 = hist.getValues(names=['boundary_con'], major=True)
@@ -195,7 +195,7 @@ plt.show()
 #         time_floris.append(float(sol.floris_solution['time'])/3600)
 #         iter_floris.append(float(sol.floris_solution['iter']))
 
-#         ## TODO: remove this block
+#         ## remove this block
 #         hist = History('output/hist_floris_' + str(j) + '_scale_' + str(i) + '.hist')
 #         val = hist.getValues(names=['feasibility','optimality','spacing_con','boundary_con'], major=True)
 #         sol.floris_solution['opt'] = val['optimality'].flatten()

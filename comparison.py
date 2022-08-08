@@ -39,18 +39,15 @@ plt.rc('legend', fontsize=font-2)    # legend fontsize
 plt.rc('figure', titlesize=font)  # fontsize of the figure title
 
 # Superimposed layouts
-_, (ax0, ax00) = plt.subplots(1,2, figsize=(12,4.75))
+_, ax0 = plt.subplots(1,1)
 
 # AEP
-_, (ax1, ax11) = plt.subplots(1,2, figsize=(12,4.75))
+_, ax1 = plt.subplots(1,1)
 
 # Wind rose
-fig = plt.figure(figsize=(6,4.75))
-ax3 = fig.add_subplot(projection='polar')
-
-# Plot generic initial layout
-layout_x, layout_y = tl.load_layout('iea')
-vis.plot_layout(layout_x, layout_y)
+fig = plt.figure(figsize=(12,4.75))
+ax2 = fig.add_subplot(121)
+ax3 = fig.add_subplot(122, polar=True)
 
 for i in range(multi):
 
@@ -61,44 +58,60 @@ for i in range(multi):
         time_flowers[i] = sol.flowers_solution['time']
         aep_flowers[i] = sol.aep_flowers
         ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
+
+        if i == 29:
+            sol.show_flowers_optimization(stats=True)
+            sol.plot_flowers_layout()
+            sol.plot_flowers_history()
+
     if floris_flag:
         file_name = 'solutions/floris' + str(i) + '.p'
         sol = pickle.load(open(file_name,'rb'))
         time_floris[i] = sol.floris_solution['time']
         aep_floris[i] = sol.aep_floris
-        ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
+        # ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
 
 # Plot optimal AEP and solver time
 if flowers_flag:
-    ax1.plot(time_flowers, aep_flowers/1e9, 'o', color='#440154')
-    ax1.set(xlabel="Time (s)", ylabel="AEP (GWh)", xlim=0, title='FLOWERS')
+    ax1.plot(time_flowers/60, aep_flowers/1e9, 'o', alpha=0.8)
+    ax1.boxplot(time_flowers/60, vert=False, positions=[np.mean(aep_flowers) / 1e9], widths=[5], manage_ticks=False)
+    ax1.set(xlabel="Time (min)", ylabel="AEP (GWh)", xlim=0, title='FLOWERS')
     ax1.grid(True)
-if floris_flag:
-    ax11.plot(time_floris, aep_floris/1e9, 'o', color='#440154')
-    ax11.set(xlabel="Time (s)", ylabel="AEP (GWh)", xlim=0, title="FLORIS")
-    ax11.grid(True)
+# if floris_flag:
+    # ax11.plot(time_floris, aep_floris/1e9, 'o', color='#440154')
+    # ax11.set(xlabel="Time (s)", ylabel="AEP (GWh)", xlim=0, title="FLORIS")
+    # ax11.grid(True)
 
 # Plot wind farm boundary
 verts = sol.boundaries/sol.diameter
 for i in range(len(verts)):
     if i == len(verts) - 1:
         ax0.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
-        ax00.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
+        #ax00.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
+        ax2.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
     else:
         ax0.plot(
             [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
         )
-        ax00.plot(
+        #ax00.plot(
+        #    [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
+        #)
+        ax2.plot(
             [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
         )
 
 ax0.set(xlabel="x / D", ylabel="y / D", title='FLOWERS', aspect='equal')
-ax00.set(xlabel="x / D", ylabel="y / D", title='FLORIS', aspect='equal')
+#ax00.set(xlabel="x / D", ylabel="y / D", title='FLORIS', aspect='equal')
 ax0.grid()
-ax00.grid()
+#ax00.grid()
 
 # Plot wind rose
 vis.plot_wind_rose(sol.wind_rose, ax=ax3)
+
+# Plot generic initial layout
+layout_x, layout_y = tl.load_layout('iea')
+vis.plot_layout(layout_x, layout_y, ax=ax2)
+fig.tight_layout()
 
 # Output averaged results
 print("================================")

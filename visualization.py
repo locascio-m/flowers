@@ -81,7 +81,13 @@ def plot_wind_rose(
             # break
 
         # Configure the plot
-        ax.legend(reversed(rects), ws_labels, **legend_kwargs)
+        ax.legend(
+            reversed(rects), 
+            ws_labels, 
+            loc="lower left",
+            bbox_to_anchor=(.55 + np.cos(.55)/2, .5 + np.sin(.55)/2),
+            **legend_kwargs
+            )
         ax.set_theta_direction(-1)
         ax.set_theta_offset(np.pi / 2.0)
         ax.set_theta_zero_location("N")
@@ -338,7 +344,7 @@ def plot_convergence_history(
     """
 
     # Objective plot
-    if aep:
+    if len(aep) > 0:
         if ax_aep is None:
             _, ax_aep = plt.subplots()
         
@@ -347,7 +353,7 @@ def plot_convergence_history(
         ax_aep.grid(True)
     
     # Optimality plot
-    if optimality:
+    if len(optimality) > 0:
         if ax_opt is None:
             _, ax_opt = plt.subplots()
         
@@ -356,7 +362,7 @@ def plot_convergence_history(
         ax_opt.grid(True)
 
     # Feasibility plot
-    if feasibility:
+    if len(feasibility) > 0:
         if ax_feas is None:
             _, ax_feas = plt.subplots()
         
