@@ -816,7 +816,7 @@ class ModelComparison:
         
         print("============================")
 
-    def show_floris_solution(self, stats=False):
+    def show_floris_optimization(self, stats=False):
         """
         Show the optimization results of FLORIS. Outputs a table 
         of optimal AEP and optimizer performance to the terminal.
@@ -955,11 +955,11 @@ class ModelComparison:
 
         """
 
-        fig, (ax0, ax1, ax2) = plt.subplots(1,3)
+        fig, (ax0, ax1, ax2) = plt.subplots(1,3, figsize=(12,4.5))
         vis.plot_convergence_history(
             aep=self.flowers_solution['aep'],
-            optimality=self.flowers_solution['optimality'],
-            feasibility=self.flowers_solution['feasibility'],
+            optimality=self.flowers_solution['opt'],
+            feasibility=self.flowers_solution['feas'],
             ax_aep=ax0,
             ax_opt=ax1,
             ax_feas=ax2
@@ -993,8 +993,8 @@ class ModelComparison:
         fig, (ax0, ax1, ax2) = plt.subplots(1,3)
         vis.plot_convergence_history(
             aep=self.floris_solution['aep'],
-            optimality=self.floris_solution['optimality'],
-            feasibility=self.floris_solution['feasibility'],
+            optimality=self.floris_solution['opt'],
+            feasibility=self.floris_solution['feas'],
             ax_aep=ax0,
             ax_opt=ax1,
             ax_feas=ax2
@@ -1029,16 +1029,16 @@ class ModelComparison:
         
         vis.plot_convergence_history(
             aep=self.floris_solution['aep'],
-            optimality=self.floris_solution['optimality'],
-            feasibility=self.floris_solution['feasibility'],
+            optimality=self.floris_solution['opt'],
+            feasibility=self.floris_solution['feas'],
             ax_aep=ax0,
             ax_opt=ax1,
             ax_feas=ax2
         )
         vis.plot_convergence_history(
             aep=self.floris_solution['aep'],
-            optimality=self.floris_solution['optimality'],
-            feasibility=self.floris_solution['feasibility'],
+            optimality=self.floris_solution['opt'],
+            feasibility=self.floris_solution['feas'],
             ax_aep=ax3,
             ax_opt=ax4,
             ax_feas=ax5
