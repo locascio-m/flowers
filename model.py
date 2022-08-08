@@ -491,6 +491,7 @@ class ModelComparison:
                 "Major feasibility tolerance": 1e-3,
                 "Scale option": 1,
                 "Derivative option": 0,
+                "Derivative level": 0,
                 },
             timeLimit=timer,
         )
@@ -499,7 +500,6 @@ class ModelComparison:
         sol = tmp.optimize()
         self._save_flowers_solution(sol, history_file)
         self.opt_flowers = True
-        # os.remove(verbose_file)
     
     def run_floris_optimization(
         self, 
@@ -580,11 +580,13 @@ class ModelComparison:
             solver=solver,
             storeHistory=history_file,
             optOptions={
-                'iPrint': -1, 
                 'Print file': verbose_file, 
                 'Summary file': output_file,
-                "Major feasibility tolerance": 1e-3,
-                "Scale option": 1},
+                "Major feasibility tolerance": 1e-4,
+                "Scale option": 1,
+                "Derivative option": 0,
+                "Derivative level": 0,
+                },
             timeLimit=timer,
         )
 
@@ -592,7 +594,6 @@ class ModelComparison:
         sol = tmp.optimize()
         self._save_floris_solution(sol, history_file)
         self.opt_floris = True
-        os.remove(verbose_file)
     
     def _save_flowers_solution(self, sol, history_file):
         """
