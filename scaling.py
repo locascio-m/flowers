@@ -5,21 +5,17 @@
 import pickle
 import sys
 
-from floris.tools.optimization.layout_optimization.layout_optimization_pyoptsparse import LayoutOptimizationPyOptSparse
-import floris.tools.optimization.pyoptsparse as opt
-
-import flowers_interface as flow
 import model as set
-import layout
 import tools as tl
 
 """
-This file runs one parallelized instance of a randomized layout optimization study
-with FLOWERS and FLORIS for a given wind rose and wind plant boundary. The wind plant
-layout is randomized with a set number of turbines.
+This file runs one instance of a randomized layout optimization study
+with FLOWERS and/or FLORIS for a given wind rose and wind plant boundary. 
+The wind plant layout is randomized with a set number of turbines. The
+scaling of the design variables is also treated as an input
 
-The ModelComparison objects are saved to 'multi#.p' files for post-processing
-in comparison.py
+The ModelComparison objects are saved to '<type>_#_scaling_$.p' files for
+post-processing in comparison_scaling.py
 
 Usage:
     $ python multistart.py <index> <opt_type> <scaling>
@@ -27,6 +23,7 @@ Usage:
     *index* : index for file names and seed for randomized initial layout.
     *opt_type* : specify 'flowers' for FLOWERS only, 'floris' for FLORIS only,
         or 'both' for FLOWERS and FLORIS optimization.
+    *scaling* : scaling parameter for design variables
 """
 
 if __name__ == "__main__":

@@ -7,9 +7,12 @@ import model as set
 import tools as tl
 import visualization as vis
 import matplotlib.pyplot as plt
-import warnings
 
-warnings.filterwarnings("ignore", category=RuntimeWarning)
+"""
+This file compares the AEP between FLOWERS and FLORIS for three different
+wind roses and layouts. 
+
+"""
 
 # Overall parameters
 D = 126.0

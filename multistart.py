@@ -12,11 +12,11 @@ import model as set
 import tools as tl
 
 """
-This file runs one parallelized instance of a randomized layout optimization study
-with FLOWERS and FLORIS for a given wind rose and wind plant boundary. The wind plant
+This file runs one instance of a randomized layout optimization study with
+FLOWERS and/or FLORIS for a given wind rose and wind plant boundary. The wind plant
 layout is randomized with a set number of turbines.
 
-The ModelComparison objects are saved to 'multi#.p' files for post-processing
+The ModelComparison objects are saved to '<type>_#.p' files for post-processing
 in comparison.py
 
 Usage:
