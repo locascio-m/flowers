@@ -582,10 +582,10 @@ class ModelComparison:
             optOptions={
                 'Print file': verbose_file, 
                 'Summary file': output_file,
-                "Major feasibility tolerance": 1e-4,
-                "Scale option": 1,
-                "Derivative option": 0,
-                "Derivative level": 0,
+                "Major optimality tolerance": 1e-2,
+                "Major feasibility tolerance": 1e-2,
+                "Scale option": 2,
+                # "Derivative level": 0,
                 },
             timeLimit=timer,
         )
