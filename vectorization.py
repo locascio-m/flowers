@@ -11,7 +11,6 @@ import visualization as vis
 """
 This file is a workspace for testing the vectorization of the FLOWERS
 code and the implementation of automatic differentiation.
-
 """
 
 # Wind rose (sampled from stored wind roses)
