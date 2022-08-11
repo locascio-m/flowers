@@ -32,27 +32,29 @@ class LayoutOptimization:
 
     """
     
-    def __init__(self, fi, boundaries, scale_dv=1.0, scale_con=1.0):
+    def __init__(self, fi, boundaries, min_dist=2.0):
 
+        # Import FLOWERS interface
         self.fi = fi
-        self.boundaries = boundaries
 
+        # Import boundary
+        self.boundaries = boundaries
         self.boundary_polygon = Polygon(self.boundaries)
         self.boundary_line = LineString(self.boundaries)
 
+        # Position normalization
         self.xmin = np.min([tup[0] for tup in boundaries])
         self.xmax = np.max([tup[0] for tup in boundaries])
         self.ymin = np.min([tup[1] for tup in boundaries])
         self.ymax = np.max([tup[1] for tup in boundaries])
 
-        # Normalized initial layout
         self.x0 = _norm(self.fi.layout_x, self.xmin, self.xmax)
         self.y0 = _norm(self.fi.layout_y, self.ymin, self.ymax)
 
-        self.min_dist = 2 * self.fi.D
+        # Minimum separation
+        self.min_dist = min_dist * self.fi.D
 
-        self.scale_dv = scale_dv
-        self.scale_con = scale_con
+        # Optimization initialization
 
         # Compute initial AEP
         self.initial_AEP = fi.calculate_aep()
