@@ -12,11 +12,11 @@ import model as set
 import tools as tl
 
 """
-This file runs one instance of a randomized layout optimization study with
-FLOWERS and/or FLORIS for a given wind rose and wind plant boundary. The wind plant
+This file runs one parallelized instance of a randomized layout optimization study
+with FLOWERS and FLORIS for a given wind rose and wind plant boundary. The wind plant
 layout is randomized with a set number of turbines.
 
-The ModelComparison objects are saved to '<type>_#.p' files for post-processing
+The ModelComparison objects are saved to 'multi#.p' files for post-processing
 in comparison.py
 
 Usage:
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     ]
 
     # Wind rose resolution
-    num_terms = 37
+    num_terms = 7
     wd_resolution = 5.0
     
     ### Output definitions
@@ -72,36 +72,24 @@ if __name__ == "__main__":
     flowers_flag = False
     floris_flag = False
 
-    if len(sys.argv) == 2:
+    if len(sys.argv) == 2 or str(sys.argv[2]) == "both":
         flowers_flag = True
         floris_flag = True
         file_name = 'solutions/multi_' + str(sys.argv[1]) + '.p'
-        hist_file = 'output/hist_' + str(sys.argv[1]) + '.hist'
+        hist_flowers_file = 'output/hist_flowers_' + str(sys.argv[1]) + '.hist'
         summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
-        print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
+        hist_floris_file = 'output/hist_floris_' + str(sys.argv[1]) + '.hist'
         summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
-        print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
-    elif str(sys.argv[2]) == "both":
-        flowers_flag = True
-        floris_flag = True
-        file_name = 'solutions/multi_' + str(sys.argv[1]) + '.p'
-        hist_file = 'output/hist_' + str(sys.argv[1]) + '.hist'
-        summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
-        print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
-        summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
-        print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
     elif str(sys.argv[2]) == "flowers":
         flowers_flag = True
         file_name = 'solutions/flowers_' + str(sys.argv[1]) + '.p'
-        hist_file = 'output/hist_flowers_' + str(sys.argv[1]) + '.hist'
+        hist_flowers_file = 'output/hist_flowers_' + str(sys.argv[1]) + '.hist'
         summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
-        print_flowers_name = 'output/print_flowers_' + str(sys.argv[1]) + '.out'
     elif str(sys.argv[2]) == "floris":
         floris_flag = True
         file_name = 'solutions/floris_' + str(sys.argv[1]) + '.p'
-        hist_file = 'output/hist_floris_' + str(sys.argv[1]) + '.hist'
+        hist_floris_file = 'output/hist_floris_' + str(sys.argv[1]) + '.hist'
         summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
-        print_floris_name = 'output/print_floris_' + str(sys.argv[1]) + '.out'
 
     ### Optimization study
 
@@ -115,17 +103,17 @@ if __name__ == "__main__":
     # FLORIS optimization
     if floris_flag:
         geo.run_floris_optimization(
-            history_file=hist_file,
+            history_file=hist_floris_file,
             output_file=summary_floris_name,
-            timer=86400,
+            timer=14400,
             )
 
     # FLOWERS optimization
     if flowers_flag:
         geo.run_flowers_optimization(
-            history_file=hist_file,
+            history_file=hist_flowers_file,
             output_file=summary_flowers_name,
-            timer=7200,
+            timer=14400,
             )
 
     # Save results
