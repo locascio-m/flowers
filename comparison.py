@@ -4,6 +4,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os.path
 import pickle
 
 import tools as tl
@@ -20,13 +21,15 @@ multistart.py script.
 # Number of random cases
 multi = 50
 flowers_flag = True
-floris_flag = False
+floris_flag = True
 
 # Initialize collected data
 aep_flowers = np.zeros(multi)
 aep_floris = np.zeros(multi)
 time_flowers = np.zeros(multi)
 time_floris = np.zeros(multi)
+iter_flowers = np.zeros(multi)
+iter_floris = np.zeros(multi)
 
 # Format plots
 font = 14
@@ -39,7 +42,7 @@ plt.rc('legend', fontsize=font-2)    # legend fontsize
 plt.rc('figure', titlesize=font)  # fontsize of the figure title
 
 # Superimposed layouts
-_, ax0 = plt.subplots(1,1)
+_, (ax0, ax00) = plt.subplots(1,2, figsize=(12,4.75))
 
 # AEP
 _, ax1 = plt.subplots(1,1)
@@ -56,20 +59,46 @@ for i in range(multi):
         file_name = 'solutions/flowers_' + str(i) + '.p'
         sol = pickle.load(open(file_name,'rb'))
         time_flowers[i] = sol.flowers_solution['time']
+        iter_flowers[i] = sol.flowers_solution['iter']
         aep_flowers[i] = sol.aep_flowers
         ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
 
-        if i == 29:
+        if i == 6:
+            file_name = 'flowers_99.p'
+            sol = pickle.load(open(file_name,'rb'))
+            # from pyoptsparse.pyOpt_history import History
+            # hist = History('output/hist_flowers_0_scale_1.hist')
+            # val = hist.getValues(
+            #         names=[
+            #         'feasibility',
+            #         'optimality',
+            #         'boundary_con',
+            #         'spacing_con',
+            #         'x',
+            #         'y'
+            #         ], 
+            #         major=True
+            #         )
+            # print(val)
+            # dsa
             sol.show_flowers_optimization(stats=True)
             sol.plot_flowers_layout()
-            sol.plot_flowers_history()
 
     if floris_flag:
-        file_name = 'solutions/floris' + str(i) + '.p'
-        sol = pickle.load(open(file_name,'rb'))
-        time_floris[i] = sol.floris_solution['time']
-        aep_floris[i] = sol.aep_floris
-        # ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
+        file_name = 'solutions/floris_' + str(i) + '.p'
+        if os.path.exists(file_name):
+            sol = pickle.load(open(file_name,'rb'))
+            time_floris[i] = sol.floris_solution['time']
+            iter_floris[i] = sol.floris_solution['iter']
+            aep_floris[i] = sol.aep_floris
+            ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
+
+            if i == 6:
+                sol.show_floris_optimization(stats=True)
+                sol.plot_floris_layout()
+
+time_floris = time_floris[time_floris != 0]
+aep_floris = aep_floris[aep_floris != 0]
 
 # Plot optimal AEP and solver time
 if flowers_flag:
@@ -77,33 +106,34 @@ if flowers_flag:
     ax1.boxplot(time_flowers/60, vert=False, positions=[np.mean(aep_flowers) / 1e9], widths=[5], manage_ticks=False)
     ax1.set(xlabel="Time (min)", ylabel="AEP (GWh)", xlim=0, title='FLOWERS')
     ax1.grid(True)
-# if floris_flag:
-    # ax11.plot(time_floris, aep_floris/1e9, 'o', color='#440154')
-    # ax11.set(xlabel="Time (s)", ylabel="AEP (GWh)", xlim=0, title="FLORIS")
-    # ax11.grid(True)
+if floris_flag:
+    ax1.plot(time_floris/60, aep_floris/1e9, 'o', alpha=0.8)
+    ax1.boxplot(time_floris/60, vert=False, positions=[np.mean(aep_floris) / 1e9], widths=[5], manage_ticks=False)
+
+ax1.legend(['FLOWERS','_','Conventional'])
 
 # Plot wind farm boundary
 verts = sol.boundaries/sol.diameter
 for i in range(len(verts)):
     if i == len(verts) - 1:
         ax0.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
-        #ax00.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
+        ax00.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
         ax2.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
     else:
         ax0.plot(
             [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
         )
-        #ax00.plot(
-        #    [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
-        #)
+        ax00.plot(
+            [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
+        )
         ax2.plot(
             [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
         )
 
 ax0.set(xlabel="x / D", ylabel="y / D", title='FLOWERS', aspect='equal')
-#ax00.set(xlabel="x / D", ylabel="y / D", title='FLORIS', aspect='equal')
+ax00.set(xlabel="x / D", ylabel="y / D", title='FLORIS', aspect='equal')
 ax0.grid()
-#ax00.grid()
+ax00.grid()
 
 # Plot wind rose
 vis.plot_wind_rose(sol.wind_rose, ax=ax3)

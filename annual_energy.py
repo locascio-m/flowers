@@ -16,7 +16,7 @@ wind roses and layouts.
 
 # Overall parameters
 D = 126.0
-num_terms = 181
+num_terms = 7
 wd_resolution = 1.0
 ws_avg = True
 
