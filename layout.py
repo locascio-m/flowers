@@ -32,7 +32,14 @@ class LayoutOptimization:
 
     """
     
-    def __init__(self, fi, boundaries, min_dist=2.0):
+    def __init__(
+        self, 
+        fi, 
+        boundaries, 
+        min_dist=2.0,
+        optOptions=None,
+        storeHistory='hist.hist',
+        timeLimit=None):
 
         # Import FLOWERS interface
         self.fi = fi
@@ -55,17 +62,47 @@ class LayoutOptimization:
         self.min_dist = min_dist * self.fi.D
 
         # Optimization initialization
+        self.optOptions = optOptions
+        self.solver = "SNOPT"
+        self.storeHistory = storeHistory
+        self.timeLimit = timeLimit
+        
+        try:
+            import pyoptsparse
+        except ImportError:
+            err_msg = (
+                "It appears you do not have pyOptSparse installed. "
+                + "Please refer to https://pyoptsparse.readthedocs.io/ for "
+                + "guidance on how to properly install the module."
+            )
+            self.logger.error(err_msg, stack_info=True)
+            raise ImportError(err_msg)
+
+        self.optProb = pyoptsparse.Optimization('layout', self._obj_func)
+
+        self.optProb = self.add_var_group(self.optProb)
+        self.optProb = self.add_con_group(self.optProb)
+        self.optProb.addObj("obj")
+
+        if optOptions is not None:
+            self.optOptions = optOptions
+        else:
+            self.optOptions = {"Major optimality tolerance": 1e-7}
+
+        exec("self.opt = pyoptsparse." + self.solver + "(options=self.optOptions)")
 
         # Compute initial AEP
         self.initial_AEP = fi.calculate_aep()
     
-    def __str__(self):
-        return "layout"
-    
-    def reinitialize(self):
-        pass
+    def optimize(self):
+        self._optimize()
+        return self.sol
 
-    def obj_func(self, varDict):
+    ###########################################################################
+    # Optimization problem definition
+    ###########################################################################
+
+    def _obj_func(self, varDict):
         # Parse the variable dictionary
         self.parse_opt_vars(varDict)
 
@@ -85,37 +122,13 @@ class LayoutOptimization:
         fail = False
         return funcs, fail
 
-    def parse_opt_vars(self, varDict):
-        self.x = _unnorm(varDict["x"], self.xmin, self.xmax)
-        self.y = _unnorm(varDict["y"], self.ymin, self.ymax)
-
-    def parse_sol_vars(self, sol):
-        self.x = list(_unnorm(sol.getDVs()["x"], self.xmin, self.xmax))[0]
-        self.y = list(_unnorm(sol.getDVs()["y"], self.ymin, self.ymax))[1]
-
-    def add_var_group(self, optProb):
-        optProb.addVarGroup(
-            "x", self.nturbs, type="c", lower=0.0, upper=1.0, value=self.x0, scale=self.scale_dv
-        )
-        optProb.addVarGroup(
-            "y", self.nturbs, type="c", lower=0.0, upper=1.0, value=self.y0, scale=self.scale_dv
-        )
-
-        return optProb
-
-    def add_con_group(self, optProb):
-        optProb.addConGroup("boundary_con", self.nturbs, upper=0.0, scale=self.scale_con)
-        optProb.addConGroup("spacing_con", 1, upper=0.0, scale=self.scale_con)
-
-        return optProb
+    # Optionally, the user can supply the optimization with gradients
+    # def _sens_func(self, varDict, funcs):
+    #     funcsSens = {}
+    #     fail = False
+    #     return funcsSens, fail
     
-    def compute_cons(self, funcs):
-        funcs["boundary_con"] = self.distance_from_boundaries()
-        funcs["spacing_con"] = self.space_constraint()
-
-        return funcs
-    
-    def space_constraint(self, rho=500):
+    def _space_constraint(self, rho=500):
         x = self.x
         y = self.y
 
@@ -138,7 +151,7 @@ class LayoutOptimization:
 
         return KS_constraint[0][0]
 
-    def distance_from_boundaries(self):
+    def _distance_from_boundaries(self):
         boundary_con = np.zeros(self.nturbs)
         for i in range(self.nturbs):
             loc = Point(self.x[i], self.y[i])
@@ -148,14 +161,51 @@ class LayoutOptimization:
 
         return boundary_con
 
-    def analytic_gradients(self):
-        return AnalyticGradients(self)
+    ###########################################################################
+    # Optimization problem setup
+    ###########################################################################
+    def _optimize(self):
+        if hasattr(self, "_sens_func"):
+            self.sol = self.opt(self.optProb, sens=self._sens_func)
+        else:
+            if self.timeLimit is not None:
+                self.sol = self.opt(self.optProb, storeHistory=self.storeHistory, timeLimit=self.timeLimit)
+            else:
+                self.sol = self.opt(self.optProb, storeHistory=self.storeHistory)
 
-    def get_optimal_layout(self, sol):
-        locsx = _unnorm(sol.getDVs()["x"], self.xmin, self.xmax)
-        locsy = _unnorm(sol.getDVs()["y"], self.ymin, self.ymax)
+    def parse_opt_vars(self, varDict):
+        self.x = _unnorm(varDict["x"], self.xmin, self.xmax)
+        self.y = _unnorm(varDict["y"], self.ymin, self.ymax)
 
-        return locsx, locsy
+    def parse_sol_vars(self, sol):
+        self.x = list(_unnorm(sol.getDVs()["x"], self.xmin, self.xmax))[0]
+        self.y = list(_unnorm(sol.getDVs()["y"], self.ymin, self.ymax))[1]
+
+    def add_var_group(self, optProb):
+        optProb.addVarGroup(
+            "x", self.nturbs, type="c", lower=0.0, upper=1.0, value=self.x0
+        )
+        optProb.addVarGroup(
+            "y", self.nturbs, type="c", lower=0.0, upper=1.0, value=self.y0
+        )
+
+        return optProb
+
+    def add_con_group(self, optProb):
+        optProb.addConGroup("boundary_con", self.nturbs, upper=0.0)
+        optProb.addConGroup("spacing_con", 1, upper=0.0)
+
+        return optProb
+    
+    def compute_cons(self, funcs):
+        funcs["boundary_con"] = self._distance_from_boundaries()
+        funcs["spacing_con"] = self._space_constraint()
+
+        return funcs
+    
+    ###########################################################################
+    # Helper methods
+    ###########################################################################
 
     @property
     def nturbs(self):
@@ -172,13 +222,3 @@ class LayoutOptimization:
     @property
     def rotor_diameter(self):
         return self.fi.D
-
-class AnalyticGradients:
-    # positions: dictionary of design variable values
-    # values: dictionary of objective and constraint values
-    # returns: nested dictionary of gradient with respect to each variable for objective and constraints
-    def __init__(self, opt):
-        self.opt = opt
-
-    def __call__(self, positions, values):
-        return None

@@ -10,7 +10,6 @@ from scipy.interpolate import NearestNDInterpolator
 import time
 
 import floris.tools as wfct
-import floris.tools.optimization.pyoptsparse as opt
 from floris.tools.optimization.layout_optimization.layout_optimization_pyoptsparse import LayoutOptimizationPyOptSparse
 
 import flowers_interface as fi
@@ -407,8 +406,6 @@ class ModelComparison:
 
     def run_flowers_optimization(
         self, 
-        solver='SNOPT',
-        scale_dv=1.0,
         history_file='',
         output_file='',
         timer=86400,
@@ -454,15 +451,6 @@ class ModelComparison:
 
         print("Solving FLOWERS optimization.")
 
-        # Verify choice of solver
-        solver_choices = ["SNOPT"]
-
-        if solver not in solver_choices:
-            raise ValueError(
-                "Solver must be one supported by pyOptSparse: "
-                + str(solver_choices)
-            )
-
         # Verify required file names
         if not history_file:
             raise ValueError('History file name must be specified.')
@@ -480,10 +468,9 @@ class ModelComparison:
             raise RuntimeError("Optimization has not been initialized.")
 
         # Initialize layout optimization class
-        model = lyt.LayoutOptimization(self.flowers, self.boundaries, scale_dv=scale_dv)
-        tmp = opt.optimization.Optimization(
-            model=model, 
-            solver=solver,
+        model = lyt.LayoutOptimization(
+            self.flowers, 
+            self.boundaries,
             storeHistory=history_file,
             optOptions={
                 'Print file': verbose_file, 
@@ -491,12 +478,13 @@ class ModelComparison:
                 "Major optimality tolerance": 1e-4,
                 "Major feasibility tolerance": 1e-4,
                 "Scale option": 2,
+                "Major iterations limit": 1
                 },
             timeLimit=timer,
-        )
+            )
 
         # Run solver and post-process results
-        sol = tmp.optimize()
+        sol = model.optimize()
         self._save_flowers_solution(sol, history_file)
         self.opt_flowers = True
     
