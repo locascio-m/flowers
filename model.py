@@ -491,6 +491,7 @@ class ModelComparison:
                 "Major optimality tolerance": 1e-4,
                 "Major feasibility tolerance": 1e-4,
                 "Scale option": 2,
+                "Major iterations limit": 2,
                 },
             timeLimit=timer,
         )
