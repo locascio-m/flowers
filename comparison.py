@@ -64,7 +64,7 @@ for i in range(multi):
         ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='#21918c', alpha=0.5)
 
         if i == 6:
-            file_name = 'flowers_99.p'
+            file_name = 'solutions/flowers_74.p'
             sol = pickle.load(open(file_name,'rb'))
             # from pyoptsparse.pyOpt_history import History
             # hist = History('output/hist_flowers_0_scale_1.hist')
