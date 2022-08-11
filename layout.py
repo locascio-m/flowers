@@ -74,7 +74,7 @@ class LayoutOptimization:
         # Compute the objective function
         funcs = {}
         funcs["obj"] = (
-            -1 * (self.fi.calculate_aep() - self.initial_AEP) / self.initial_AEP
+            -1 * self.fi.calculate_aep() / self.initial_AEP
         )
 
         # Compute constraints, if any are defined for the optimization
@@ -102,7 +102,7 @@ class LayoutOptimization:
         return optProb
 
     def add_con_group(self, optProb):
-        optProb.addConGroup("boundary_con", self.nturbs, upper=-1.0, scale=self.scale_con)
+        optProb.addConGroup("boundary_con", self.nturbs, upper=0.0, scale=self.scale_con)
         optProb.addConGroup("spacing_con", 1, upper=0.0, scale=self.scale_con)
 
         return optProb
