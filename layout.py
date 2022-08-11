@@ -18,17 +18,23 @@ class LayoutOptimization:
     """
     LayoutOptimization is a high-level interface to set up the layout optimization
     problem for FLOWERS. AEP is the objective function. Two constraints are enforced:
-    (1) minimum spacing of 2 rotor diameters and (2) all turbines must be within the
-    farm boundary. This code is copied from FLORIS except for obj_func()
+    (1) minimum spacing between turbine centers and (2) all turbines must be within the
+    farm boundary.
 
     Args:
-        fi (Flowers): FLOWERS interface
+        fi (FlowersInterface): initialized FLOWERS interface
         boundaries (list(tuple)): boundary vertices in the form
-                [(x0,y0), (x1,y1), ... , (xN,yN)]
-        scale_dv (float, optional): scaling for design variables
-            (turbine positions). Defaults to 1.0
-        scale_con (float, optional): scaling for constraints
-            (spacing and boundary). Defaults to 1.0
+            [(x0,y0), (x1,y1), ... , (xN,yN)]
+        min_dist (float, optional): minimum separation between turbine
+            centers, normalized by rotor diameter. Defaults to 2.0.
+        optOptions (dict): dictionary of SNOPT options. See 
+            https://web.stanford.edu/group/SOL/guides/sndoc7.pdf for
+            more information.
+        storeHistory (str, optional): file name to store history of
+            design variables, optimality, and feasibility
+        timeLimit (int, optional): maximum time for SNOPT to run optimizer
+            before termination (in seconds). Set to allow time for post-processing
+            of results before job is terminated on Eagle.
 
     """
     
@@ -43,6 +49,7 @@ class LayoutOptimization:
 
         # Import FLOWERS interface
         self.fi = fi
+        self.nturbs = len(self.fi.layout_x)
 
         # Import boundary
         self.boundaries = boundaries
@@ -62,11 +69,11 @@ class LayoutOptimization:
         self.min_dist = min_dist * self.fi.D
 
         # Optimization initialization
-        self.optOptions = optOptions
         self.solver = "SNOPT"
         self.storeHistory = storeHistory
         self.timeLimit = timeLimit
         
+        # Import PyOptSparse and initialize optimization problem
         try:
             import pyoptsparse
         except ImportError:
@@ -95,6 +102,7 @@ class LayoutOptimization:
         self.initial_AEP = fi.calculate_aep()
     
     def optimize(self):
+        """Method to initiate optimization."""
         self._optimize()
         return self.sol
 
@@ -202,23 +210,3 @@ class LayoutOptimization:
         funcs["spacing_con"] = self._space_constraint()
 
         return funcs
-    
-    ###########################################################################
-    # Helper methods
-    ###########################################################################
-
-    @property
-    def nturbs(self):
-        """
-        This property returns the number of turbines in the FLORIS
-        object.
-
-        Returns:
-            nturbs (int): The number of turbines in the FLORIS object.
-        """
-        self._nturbs = len(self.fi.layout_x)
-        return self._nturbs
-
-    @property
-    def rotor_diameter(self):
-        return self.fi.D
