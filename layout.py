@@ -147,17 +147,17 @@ class LayoutOptimization:
         distances[arange, arange] = 1e10
         dist = np.min(distances, axis=0)
 
-        g = 1 - np.array(dist) / self.min_dist
+        # g = 1 - np.array(dist) / self.min_dist
 
-        # Following code copied from OpenMDAO KSComp().
-        # Constraint is satisfied when KS_constraint <= 0
-        g_max = np.max(np.atleast_2d(g), axis=-1)[:, np.newaxis]
-        g_diff = g - g_max
-        exponents = np.exp(rho * g_diff)
-        summation = np.sum(exponents, axis=-1)[:, np.newaxis]
-        KS_constraint = g_max + 1.0 / rho * np.log(summation)
+        # # Following code copied from OpenMDAO KSComp().
+        # # Constraint is satisfied when KS_constraint <= 0
+        # g_max = np.max(np.atleast_2d(g), axis=-1)[:, np.newaxis]
+        # g_diff = g - g_max
+        # exponents = np.exp(rho * g_diff)
+        # summation = np.sum(exponents, axis=-1)[:, np.newaxis]
+        # KS_constraint = g_max + 1.0 / rho * np.log(summation)
 
-        return KS_constraint[0][0]
+        return dist
 
     def _distance_from_boundaries(self):
         boundary_con = np.zeros(self.nturbs)
@@ -201,7 +201,7 @@ class LayoutOptimization:
 
     def add_con_group(self, optProb):
         optProb.addConGroup("boundary_con", self.nturbs, upper=0.0)
-        optProb.addConGroup("spacing_con", 1, upper=0.0)
+        optProb.addConGroup("spacing_con", self.nturbs, upper=0.0)
 
         return optProb
     
