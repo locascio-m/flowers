@@ -5,6 +5,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
+from scipy.spatial.distance import cdist
 
 import tools as tl
 import visualization as vis
@@ -82,6 +83,15 @@ for i in range(multi):
             sol.show_flowers_optimization(stats=True)
             ax = sol.plot_flowers_layout()
             ax.set(title='FLOWERS ' + str(i))
+        
+        if i in flowers_bad:
+            locs = np.vstack((sol.layout_flowers[0], sol.layout_flowers[1])).T
+            distances = cdist(locs, locs)
+            arange = np.arange(distances.shape[0])
+            distances[arange, arange] = 1e10
+            dist = np.min(distances, axis=0)
+            print("FLOWERS " + str(i))
+            print(np.min(dist) / 126.0)
 
     if floris_flag:
         file_name = 'solutions/floris_' + str(i) + '.p'
@@ -95,10 +105,19 @@ for i in range(multi):
         else:
             ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='tab:blue', alpha=0.5)
 
-        if i == 21:
+        if i == 4:
             sol.show_floris_optimization(stats=True)
             ax = sol.plot_floris_layout()
             ax.set(title='FLORIS ' + str(i))
+        
+        if i in floris_bad:
+            locs = np.vstack((sol.layout_floris[0], sol.layout_floris[1])).T
+            distances = cdist(locs, locs)
+            arange = np.arange(distances.shape[0])
+            distances[arange, arange] = 1e10
+            dist = np.min(distances, axis=0)
+            print("FLORIS " + str(i))
+            print(np.min(dist) / 126.0)
 
 # Plot optimal AEP and solver time
 if flowers_flag:
