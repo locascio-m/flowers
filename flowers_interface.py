@@ -108,11 +108,9 @@ class Flowers():
         p = self._calculate_wake(matrix_x,matrix_y)
 
         # Mask turbine interaction with itself
-        p = np.fill_diagonal(p, 0.)
-        # p = np.ma.masked_where(matrix_r < self.D/2, p)
+        np.fill_diagonal(p, 0.)
 
         # Sum power for each turbine 
-        # TODO: allow AEP for a single turbine
         p_sum = np.sum(p, axis=1)
         aep = np.sum(tl.cp_lookup(p0 - p_sum)  * (p0 - p_sum)**3)
         aep *= 0.5 * 1.225 * np.pi * self.D**2 / 4 * 8760
@@ -179,12 +177,16 @@ class Flowers():
         R = np.sqrt(X**2 + Y**2)
         THETA = np.arctan2(Y,X) + np.pi
 
+        # Set up mask for rotor swept area
+        mask_area = np.array(R <= 1, dtype=int)
+        mask_val = self.fs.a_free[0] * np.pi
+
         # Critical polar angle of wake edge (as a function of distance from turbine)
-        # TODO: discontinuity?
         theta_c = np.abs(np.arctan(
             (1 / R + self.k * np.sqrt(1 + self.k**2 - R**(-2)))
             / (-self.k / R + np.sqrt(1 + self.k**2 - R**(-2)))
             ))
+        theta_c = np.nan_to_num(theta_c)
         
         # Contribution from zero-frequency Fourier mode
         du = self.fs.a_wake[0] * (
@@ -208,7 +210,6 @@ class Flowers():
                 + 2 * n * self.k * R * theta_c * np.cos(n * theta_c)
                 ), axis=2)
         
-        du = du * np.array(R > 1) + np.array(R <= 1)
-        print(du)
+        du = du * (1 - mask_area) + mask_val * mask_area
 
         return du

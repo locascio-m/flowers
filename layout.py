@@ -137,11 +137,9 @@ class LayoutOptimization:
     #     return funcsSens, fail
     
     def _space_constraint(self, rho=500):
-        x = self.x
-        y = self.y
 
         # Sped up distance calc here using vectorization
-        locs = np.vstack((x, y)).T
+        locs = np.vstack((self.x, self.y)).T
         distances = cdist(locs, locs)
         arange = np.arange(distances.shape[0])
         distances[arange, arange] = 1e10
