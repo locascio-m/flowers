@@ -8,6 +8,8 @@ import os
 from pyoptsparse.pyOpt_history import History
 from scipy.interpolate import NearestNDInterpolator
 import time
+from scipy.spatial.distance import cdist
+from shapely.geometry import Polygon, Point, LineString
 
 import floris.tools as wfct
 import floris.tools.optimization.pyoptsparse as opt
@@ -769,6 +771,37 @@ class ModelComparison:
         self.floris_solution['time'] = float(sol.optTime)
         self.floris_solution['solver_time'] = float(sol.optCodeTime)
         self.floris_solution['obj_calls'] = float(sol.userObjCalls)
+
+    def show_flowers_feasibility(self):
+
+        # Spacing constraint
+        x = self.layout_flowers[0]
+        y = self.layout_flowers[1]
+
+        # Sped up distance calc here using vectorization
+        locs = np.vstack((x, y)).T
+        distances = cdist(locs, locs)
+        arange = np.arange(distances.shape[0])
+        distances[arange, arange] = 1e10
+        dist = np.min(distances, axis=0)
+        if np.min(dist) > 2 * self.diameter:
+            print("Spacing constraint satisfied")
+        else:
+            print("Minimum spacing: {:.2f} D".format(np.min(dist)/self.diameter))
+        
+        # Boundary constraint
+        boundary_polygon = Polygon(self.boundaries)
+        boundary_line = LineString(self.boundaries)
+        boundary_con = np.zeros(len(x))
+        for i in range(len(x)):
+            loc = Point(x[i], y[i])
+            boundary_con[i] = loc.distance(boundary_line) #NaNsafe, or 1 to 5 m inside boundary
+            if boundary_polygon.contains(loc)==True:
+                boundary_con[i] *= -1.0
+        if np.max(boundary_con) <= 0:
+            print("Boundary constraint satisfied")
+        else:
+            print("Maximum boundary distance: {:.2f} m".format(np.max(boundary_con)))
 
     def show_optimization_comparison(self, stats=False):
         """
