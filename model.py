@@ -176,6 +176,7 @@ class ModelComparison:
             wr = tl.resample_average_ws_by_wd(wr)
             freq = wr.freq_val.to_numpy()
             self.freq_floris = freq / np.sum(freq)
+            self.bins_floris = len(self.freq_floris)
 
             self.floris.reinitialize(
                 wind_directions=wr.wd,
@@ -617,44 +618,57 @@ class ModelComparison:
 
         # Read history
         hist = History(history_file)
+        # val = hist.getValues(
+        #     names=[
+        #         'feasibility',
+        #         'optimality',
+        #         'boundary_con',
+        #         'spacing_con',
+        #         'x',
+        #         'y'
+        #         ], 
+        #         major=True
+        #         )
         val = hist.getValues(
             names=[
-                'feasibility',
-                'optimality',
-                'boundary_con',
-                'spacing_con',
                 'x',
-                'y'
-                ], 
-                major=True
-                )
+                'y',
+            ],
+            allowSens=True,
+            callCounters=hist.callCounters,
+            major=False
+        )
         xx = val['x']
         yy = val['y']
 
         # Store history
         self.flowers_solution = dict()
         self.flowers_solution['iter'] = len(xx) - 1
-        self.flowers_solution['opt'] = val['optimality'].flatten()
-        self.flowers_solution['feas'] = val['feasibility'].flatten()
-        self.flowers_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
-        self.flowers_solution['con_space'] = val['spacing_con'].flatten()
+        # self.flowers_solution['opt'] = val['optimality'].flatten()
+        # self.flowers_solution['feas'] = val['feasibility'].flatten()
+        # self.flowers_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
+        # self.flowers_solution['con_space'] = val['spacing_con'].flatten()
 
-        # Store layouts
-        self.flowers_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
-        self.layout_flowers = (self.flowers_solution['layout'][0][-1],self.flowers_solution['layout'][1][-1])
+        # # Store layouts
+        # self.flowers_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
+        # self.layout_flowers = (self.flowers_solution['layout'][0][-1],self.flowers_solution['layout'][1][-1])
 
-        # Compute and store AEP
-        self.flowers_solution['aep'] = []
-        for i in range(len(xx)):
-            self.post.reinitialize(layout=(self.flowers_solution['layout'][0][i],self.flowers_solution['layout'][1][i]))
-            self.flowers_solution['aep'].append(self.post.get_farm_AEP(freq=self.post_freq))
-        self.aep_flowers = self.flowers_solution['aep'][-1]
+        # # Compute and store AEP
+        # self.flowers_solution['aep'] = []
+        # for i in range(len(xx)):
+        #     self.post.reinitialize(layout=(self.flowers_solution['layout'][0][i],self.flowers_solution['layout'][1][i]))
+        #     self.flowers_solution['aep'].append(self.post.get_farm_AEP(freq=self.post_freq))
+        # self.aep_flowers = self.flowers_solution['aep'][-1]
+        xxx = self._unnorm(sol.getDVs()["x"], self.xmin, self.xmax)
+        yyy = self._unnorm(sol.getDVs()["y"], self.ymin, self.ymax)
+        self.layout_flowers = (xxx, yyy)
+        self.post.reinitialize(layout=(xxx,yyy))
+        self.aep_flowers = self.post.get_farm_AEP(freq=self.post_freq)
 
         # Store optimization performance
         self.flowers_solution['time'] = float(sol.optTime)
         self.flowers_solution['solver_time'] = float(sol.optCodeTime)
         self.flowers_solution['obj_calls'] = float(sol.userObjCalls)
-
 
     def _save_floris_solution(self, sol, history="hist.hist"):
         """
@@ -692,38 +706,52 @@ class ModelComparison:
 
         # Read history
         hist = History(history)
+        # val = hist.getValues(
+        #     names=[
+        #         'feasibility',
+        #         'optimality',
+        #         'boundary_con',
+        #         'spacing_con',
+        #         'x',
+        #         'y'
+        #         ], 
+        #         major=True
+        #         )
         val = hist.getValues(
             names=[
-                'feasibility',
-                'optimality',
-                'boundary_con',
-                'spacing_con',
                 'x',
-                'y'
-                ], 
-                major=True
-                )
+                'y',
+            ],
+            allowSens=True,
+            callCounters=hist.callCounters,
+            major=False
+        )
         xx = val['x']
         yy = val['y']
 
         # Store history
         self.floris_solution = dict()
         self.floris_solution['iter'] = len(xx) - 1
-        self.floris_solution['opt'] = val['optimality'].flatten()
-        self.floris_solution['feas'] = val['feasibility'].flatten()
-        self.floris_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
-        self.floris_solution['con_space'] = val['spacing_con'].flatten()
+        # self.floris_solution['opt'] = val['optimality'].flatten()
+        # self.floris_solution['feas'] = val['feasibility'].flatten()
+        # self.floris_solution['con_bound'] = np.swapaxes(val['boundary_con'],0,1)
+        # self.floris_solution['con_space'] = val['spacing_con'].flatten()
 
-        # Store layouts
-        self.floris_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
-        self.layout_floris = (self.floris_solution['layout'][0][-1],self.floris_solution['layout'][1][-1])
+        # # Store layouts
+        # self.floris_solution['layout'] = (self._unnorm(xx, self.xmin, self.xmax), self._unnorm(yy, self.ymin, self.ymax))
+        # self.layout_floris = (self.floris_solution['layout'][0][-1],self.floris_solution['layout'][1][-1])
 
-        # Compute and store AEP
-        self.floris_solution['aep'] = []
-        for i in range(len(xx)):
-            self.post.reinitialize(layout=(self.floris_solution['layout'][0][i],self.floris_solution['layout'][1][i]))
-            self.floris_solution['aep'].append(self.post.get_farm_AEP(freq=self.post_freq))
-        self.aep_floris = self.floris_solution['aep'][-1]
+        # # Compute and store AEP
+        # self.floris_solution['aep'] = []
+        # for i in range(len(xx)):
+        #     self.post.reinitialize(layout=(self.floris_solution['layout'][0][i],self.floris_solution['layout'][1][i]))
+        #     self.floris_solution['aep'].append(self.post.get_farm_AEP(freq=self.post_freq))
+        # self.aep_floris = self.floris_solution['aep'][-1]
+        xxx = self._unnorm(sol.getDVs()["x"], self.xmin, self.xmax)
+        yyy = self._unnorm(sol.getDVs()["y"], self.ymin, self.ymax)
+        self.layout_floris = (xxx, yyy)
+        self.post.reinitialize(layout=(xxx,yyy))
+        self.aep_floris = self.post.get_farm_AEP(freq=self.post_freq)
 
         # Store optimization performance
         self.floris_solution['time'] = float(sol.optTime)
