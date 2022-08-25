@@ -72,9 +72,9 @@ if __name__ == "__main__":
     flowers_flag = False
     floris_flag = False
 
-    file_name = 'solutions/debug_' + str(sys.argv[1]) + '.p'
-    hist_file_file = 'output/hist_debug_' + str(sys.argv[1]) + '.hist'
-    summary_file_name = 'output/snopt_debug_' + str(sys.argv[1]) + '.out'
+    file_name = 'solutions/debug.p'
+    hist_file_file = 'output/hist_debug.hist'
+    summary_file_name = 'output/snopt_debug.out'
 
     if str(sys.argv[2]) == "flowers":
         flowers_flag = True
