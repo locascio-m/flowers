@@ -102,13 +102,14 @@ class Flowers():
         # Reshape relative positions into symmetric 2D array
         matrix_x = self.layout_x - np.reshape(self.layout_x,(-1,1))
         matrix_y = self.layout_y - np.reshape(self.layout_y,(-1,1))
-        matrix_r = np.sqrt(matrix_x**2 + matrix_y**2)
+        # matrix_r = np.sqrt(matrix_x**2 + matrix_y**2)
 
         # Vectorized wake calculation
         p = self._calculate_wake(matrix_x,matrix_y)
 
         # Mask turbine interaction with itself
-        p = np.ma.masked_where(matrix_r < self.D/2, p)
+        p = np.fill_diagonal(p, 0.)
+        # p = np.ma.masked_where(matrix_r < self.D/2, p)
 
         # Sum power for each turbine 
         # TODO: allow AEP for a single turbine
@@ -206,5 +207,8 @@ class Flowers():
                 * (n**2 * (self.k * R * (theta_c**2 + 1) + 1) - 2 * self.k * R) 
                 + 2 * n * self.k * R * theta_c * np.cos(n * theta_c)
                 ), axis=2)
+        
+        du = du * np.array(R > 1) + np.array(R <= 1)
+        print(du)
 
         return du
