@@ -17,4 +17,4 @@ gauss_floris.sh
 gauss_flowers.sh
 scaling_floris.sh
 scaling_flowers.sh
-debug_flowers.sh
+debug.sh
