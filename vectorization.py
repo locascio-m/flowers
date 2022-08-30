@@ -51,12 +51,41 @@ d = np.zeros(len(xx))
 for i in range(len(xx)):
     loc = Point(xx[i], yy[i])
     d[i] = loc.distance(boundary_line) #NaNsafe, or 1 to 5 m inside boundary
+    if boundary_polygon.contains(loc)==True:
+        d[i] *= -1.0
 D = np.reshape(d, np.shape(X))
 
 fig, ax = plt.subplots(1,1)
 c = ax.pcolormesh(X, Y, D)
+ax.contour(X,Y,D,[0], colors='w')
 ax.set(xlabel="x [m]", ylabel="y [m]", title='Distance', aspect='equal')
 fig.colorbar(c, ax=ax)
+
+Dx = np.diff(D, axis=1, append=0) / x[1]
+Dy = np.diff(D, axis=0, append=0) / y[1]
+Dx[:,-1] = 0
+Dy[-1,:] = 0
+
+print("Dx")
+print(X[np.where(Dx > 1)])
+print(Y[np.where(Dx > 1)])
+print("Dy")
+print(X[np.where(Dy > 1)])
+print(Y[np.where(Dy > 1)])
+
+figxy, (axx, axy) = plt.subplots(1,2)
+cx = axx.pcolormesh(X, Y, Dx, vmin=-1, vmax=1)
+axx.set(xlabel="x [m]", ylabel="y [m]", title='Partial x', aspect='equal')
+axx.text(X[500,750],Y[500,750],"{:.2f}".format(Dx[500,750]))
+axx.text(X[250,250],Y[250,250],"{:.2f}".format(Dx[250,250]))
+axx.text(X[750,250],Y[750,250],"{:.2f}".format(Dx[750,250]))
+figxy.colorbar(cx, ax=axx)
+cy = axy.pcolormesh(X, Y, Dy, vmin=-1, vmax=1)
+axy.set(xlabel="x [m]", ylabel="y [m]", title='Partial y', aspect='equal')
+axy.text(X[500,750],Y[500,750],"{:.2f}".format(Dy[500,750]))
+axy.text(X[250,250],Y[250,250],"{:.2f}".format(Dy[250,250]))
+axy.text(X[750,250],Y[750,250],"{:.2f}".format(Dy[750,250]))
+figxy.colorbar(cy, ax=axy)
 
 # Number of turbines
 # n_turb = 31

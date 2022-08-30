@@ -772,8 +772,10 @@ class ModelComparison:
         self.floris_solution['solver_time'] = float(sol.optCodeTime)
         self.floris_solution['obj_calls'] = float(sol.userObjCalls)
 
-    def show_flowers_feasibility(self):
+    def show_flowers_feasibility(self, inf=False):
 
+        feasible=True
+        viol = {}
         # Spacing constraint
         x = self.layout_flowers[0]
         y = self.layout_flowers[1]
@@ -784,10 +786,9 @@ class ModelComparison:
         arange = np.arange(distances.shape[0])
         distances[arange, arange] = 1e10
         dist = np.min(distances, axis=0)
-        if np.min(dist) > 2 * self.diameter:
-            print("Spacing constraint satisfied")
-        else:
-            print("Minimum spacing: {:.2f} D".format(np.min(dist)/self.diameter))
+        if np.min(dist) <= 1.99 * self.diameter:
+            feasible = False
+            viol['Spacing [D]'] = np.min(dist)/self.diameter
         
         # Boundary constraint
         boundary_polygon = Polygon(self.boundaries)
@@ -798,10 +799,15 @@ class ModelComparison:
             boundary_con[i] = loc.distance(boundary_line) #NaNsafe, or 1 to 5 m inside boundary
             if boundary_polygon.contains(loc)==True:
                 boundary_con[i] *= -1.0
-        if np.max(boundary_con) <= 0:
-            print("Boundary constraint satisfied")
+        if np.max(boundary_con) >  1:
+            feasible = False
+            viol['Boundary [m]'] = np.max(boundary_con)
+        
+        # Output
+        if inf:
+            return viol
         else:
-            print("Maximum boundary distance: {:.2f} m".format(np.max(boundary_con)))
+            return feasible
 
     def show_optimization_comparison(self, stats=False):
         """
