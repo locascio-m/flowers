@@ -95,7 +95,7 @@ if __name__ == "__main__":
         geo.run_floris_optimization(
             history_file=hist_file_file,
             output_file=summary_file_name,
-            timer=120,
+            timer=21600,
             )
 
     # FLOWERS optimization
