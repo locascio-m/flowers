@@ -7,6 +7,8 @@ import numpy as np
 import os
 from pyoptsparse.pyOpt_history import History
 from scipy.interpolate import NearestNDInterpolator
+from scipy.spatial.distance import cdist
+from shapely.geometry import Polygon, Point, LineString
 import time
 
 import floris.tools as wfct
@@ -464,8 +466,6 @@ class ModelComparison:
         # Adjust verbose output file name
         verbose_file = output_file[:-3] + 'verb'
 
-        # TODO: enable inputting more optimizer options
-
         # Verify interface has been initialized
         if not self.opt_init:
             raise RuntimeError("Optimization has not been initialized.")
@@ -645,6 +645,7 @@ class ModelComparison:
         yy = val['y']
 
         # Store history
+        # TODO: store SNOPT exit code
         self.flowers_solution = dict()
         self.flowers_solution['iter'] = len(xx) - 1
         # self.flowers_solution['opt'] = val['optimality'].flatten()
@@ -797,6 +798,43 @@ class ModelComparison:
             return viol
         else:
             return feasible
+    
+    def show_floris_feasibility(self, inf=False):
+
+        feasible=True
+        viol = {}
+        # Spacing constraint
+        x = self.layout_floris[0]
+        y = self.layout_floris[1]
+
+        # Sped up distance calc here using vectorization
+        locs = np.vstack((x, y)).T
+        distances = cdist(locs, locs)
+        arange = np.arange(distances.shape[0])
+        distances[arange, arange] = 1e10
+        dist = np.min(distances, axis=0)
+        if np.min(dist) <= 1.99 * self.diameter:
+            feasible = False
+            viol['Spacing [D]'] = np.min(dist)/self.diameter
+        
+        # Boundary constraint
+        boundary_polygon = Polygon(self.boundaries)
+        boundary_line = LineString(self.boundaries)
+        boundary_con = np.zeros(len(x))
+        for i in range(len(x)):
+            loc = Point(x[i], y[i])
+            boundary_con[i] = loc.distance(boundary_line) #NaNsafe, or 1 to 5 m inside boundary
+            if boundary_polygon.contains(loc)==True:
+                boundary_con[i] *= -1.0
+        if np.max(boundary_con) >  1:
+            feasible = False
+            viol['Boundary [m]'] = np.max(boundary_con)
+        
+        # Output
+        if inf:
+            return viol
+        else:
+            return feasible
 
     def show_optimization_comparison(self, stats=False):
         """
@@ -902,7 +940,7 @@ class ModelComparison:
         
         print("============================")
 
-    def plot_flowers_layout(self, ax=None):
+    def plot_flowers_layout(self, ax=None, color_initial="tab:blue", color_final="tab:orange"):
         """
         Plot the initial and optimal layouts of the FLOWERS
         optimization.
@@ -923,6 +961,8 @@ class ModelComparison:
             x_init=self.layout_x, 
             y_init=self.layout_y, 
             D=self.diameter,
+            color_initial=color_initial,
+            color_final=color_final
         )
         # plt.legend(
         #     ["Initial", "Final"],
@@ -931,7 +971,7 @@ class ModelComparison:
         ax.set(title="FLOWERS")
         return ax
     
-    def plot_floris_layout(self, ax=None):
+    def plot_floris_layout(self, ax=None, color_initial="tab:blue", color_final="tab:orange"):
         """
         Plot the initial and optimal layouts of the FLORIS
         optimization.
@@ -952,6 +992,8 @@ class ModelComparison:
             x_init=self.layout_x, 
             y_init=self.layout_y, 
             D=self.diameter,
+            color_initial=color_initial,
+            color_final=color_final
         )
         # plt.legend(
         #     ["Initial", "Final"],

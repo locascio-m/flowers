@@ -67,7 +67,6 @@ class Flowers():
                 ct[wd] = 0.99999
         
         # Fourier expansion of freestream term 
-        # TODO: verify coefficient scaling
         g = 1 / (2 * np.pi) * wr.ws * wr.freq_val
         gft = 2 * np.fft.rfft(g)
         a_free =  gft.real
