@@ -24,6 +24,7 @@ floris_flag = True
 
 # Initialize collected data
 aep_flowers = np.zeros(multi)
+aep_flowers_real = np.zeros(multi)
 aep_floris = np.zeros(multi)
 time_flowers = np.zeros(multi)
 time_floris = np.zeros(multi)
@@ -82,6 +83,10 @@ for i in range(multi):
             # ax.set(title='FLOWERS ' + str(i))   
         elif i in flowers_infeasible:
             ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='tab:orange', alpha=0.5)
+        
+        sol.flowers.layout_x = sol.layout_flowers[0]
+        sol.flowers.layout_y = sol.layout_flowers[1]
+        aep_flowers_real[i] = sol.flowers.calculate_aep()
 
     if floris_flag:
         file_name = 'solutions/floris_' + str(i) + '.p'
@@ -105,6 +110,7 @@ if flowers_flag:
     ax1.plot(time_flowers[flowers_success]/3600, aep_flowers[flowers_success]/1e9, 'o', color='tab:green', alpha=0.8)
     ax1.plot(time_flowers[flowers_numerical]/3600, aep_flowers[flowers_numerical]/1e9, 'o', color='tab:blue',alpha=0.8)
     ax1.plot(time_flowers[flowers_infeasible]/3600, aep_flowers[flowers_infeasible]/1e9, 'o', color='tab:orange',alpha=0.8)
+    ax1.plot(time_flowers/3600, aep_flowers_real/1e9, 'o', color='tab:red',alpha=0.8)
     # ax1.boxplot(time_flowers/60, vert=False, positions=[np.mean(aep_flowers) / 1e9], widths=[5], manage_ticks=False)
 if floris_flag:
     ax11.plot(time_floris[floris_success]/60, aep_floris[floris_success]/1e9, 'o', color='tab:green', alpha=0.8)
@@ -114,7 +120,7 @@ if floris_flag:
 
 ax1.set(xlabel="Time (hr)", ylabel="AEP (GWh)", xlim=0, title='FLOWERS')
 ax1.grid(True)
-ax1.legend(['Success','Numerics','Failure'])
+ax1.legend(['Success','Numerics','Failure','FLOWERS'])
 ax11.set(xlabel="Time (min)", ylabel="AEP (GWh)", xlim=0, title='FLORIS')
 ax11.grid(True)
 ax11.legend(['Success','Numerics','Timeout'])
@@ -142,6 +148,9 @@ ax0.grid()
 ax00.grid()
 
 # Plot wind rose
+wr = tl.resample_wind_direction(sol.wind_rose, wd = np.arange(0, 360, 45))
+wr = tl.resample_average_ws_by_wd(wr)
+print(wr)
 vis.plot_wind_rose(sol.wind_rose, ax=ax3)
 
 # Plot generic initial layout
