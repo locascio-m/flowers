@@ -58,13 +58,17 @@ class Flowers():
         # Transform wind direction to polar angle 
         wr["wd"] = np.remainder(450 - wr.wd, 360)
         wr.sort_values("wd", inplace=True)
+        wr = wr.append(wr.iloc[0])
 
         # Look up thrust coefficient for each wind direction bin
         ct = np.zeros(len(wr.ws))
-        for wd in range(len(wr.ws)):
-            ct[wd] = tl.ct_lookup(wr.ws[wd])
-            if ct[wd] >= 1.0:
-                ct[wd] = 0.99999
+        ct = tl.ct_lookup(wr.ws)
+        ct = ct * np.array(ct < 1) + np.ones_like(ct) * np.array(ct >= 1) * 0.99999
+        # ct = np.zeros(len(wr.ws))
+        # for wd in range(len(wr.ws)):
+        #     ct[wd] = tl.ct_lookup(wr.ws[wd])
+        #     if ct[wd] >= 1.0:
+        #         ct[wd] = 0.99999
         
         # Fourier expansion of freestream term 
         g = 1 / (2 * np.pi) * wr.ws * wr.freq_val
