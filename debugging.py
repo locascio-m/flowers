@@ -72,27 +72,17 @@ if __name__ == "__main__":
     flowers_flag = False
     floris_flag = False
 
-    if len(sys.argv) == 2 or str(sys.argv[2]) == "both":
+    file_name = 'solutions/debug.p'
+    hist_file_file = 'output/hist_debug.hist'
+    summary_file_name = 'output/snopt_debug.out'
+
+    if str(sys.argv[2]) == "flowers":
         flowers_flag = True
-        floris_flag = True
-        file_name = 'solutions/multi_' + str(sys.argv[1]) + '.p'
-        hist_flowers_file = 'output/hist_flowers_' + str(sys.argv[1]) + '.hist'
-        summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
-        hist_floris_file = 'output/hist_floris_' + str(sys.argv[1]) + '.hist'
-        summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
-    elif str(sys.argv[2]) == "flowers":
-        flowers_flag = True
-        file_name = 'solutions/flowers_' + str(sys.argv[1]) + '.p'
-        hist_flowers_file = 'output/hist_flowers_' + str(sys.argv[1]) + '.hist'
-        summary_flowers_name = 'output/snopt_flowers_' + str(sys.argv[1]) + '.out'
+
     elif str(sys.argv[2]) == "floris":
         floris_flag = True
-        file_name = 'solutions/floris_' + str(sys.argv[1]) + '.p'
-        hist_floris_file = 'output/hist_floris_' + str(sys.argv[1]) + '.hist'
-        summary_floris_name = 'output/snopt_floris_' + str(sys.argv[1]) + '.out'
 
     ### Optimization study
-
     # Randomize wind farm layout
     layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=n_turb, idx=int(sys.argv[1]))
 
@@ -103,21 +93,17 @@ if __name__ == "__main__":
     # FLORIS optimization
     if floris_flag:
         geo.run_floris_optimization(
-            history_file=hist_floris_file,
-            output_file=summary_floris_name,
-            timer=86400,
-            o_tol=1e-4,
-            f_tol=1e-4,
+            history_file=hist_file_file,
+            output_file=summary_file_name,
+            timer=21600,
             )
 
     # FLOWERS optimization
     if flowers_flag:
         geo.run_flowers_optimization(
-            history_file=hist_flowers_file,
-            output_file=summary_flowers_name,
-            timer=86400,
-            o_tol=1e-2,
-            f_tol=1e-4,
+            history_file=hist_file_file,
+            output_file=summary_file_name,
+            timer=21600,
             )
 
     # Save results

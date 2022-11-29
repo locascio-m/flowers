@@ -25,30 +25,22 @@ floris_flag = True
 
 # Initialize collected data
 aep_flowers = np.zeros(multi)
+aep_flowers_real = np.zeros(multi)
 aep_floris = np.zeros(multi)
 time_flowers = np.zeros(multi)
 time_floris = np.zeros(multi)
 iter_flowers = np.zeros(multi)
 iter_floris = np.zeros(multi)
 
-flowers_good = [7,12,17,18,28,29,34,39,45,]
-flowers_bad = [3,8,9,15,19,21,22,23,24,25,30,31,37,38,40,41,47]
-flowers_inf = [10,33,42,43]
-flowers_time = np.arange(50)
-flowers_time = np.delete(flowers_time, flowers_bad+flowers_good+flowers_inf)
-flowers_time = flowers_time.tolist()
+flowers_1 = [0,2,4,7,14,15,17,18,20,25,26,27,28,29,32,34,35,36,37,45,47]
+flowers_3 = [1,5,6,8,9,11,12,13,16,19,21,22,23,24,31,38,39,40,41,44,46,48,49]
+flowers_success = flowers_1+flowers_3
+flowers_numerical = [3,30]
+flowers_infeasible = [10,33,42,43]
 
-# flowers_bad = [4,9,11,13,16,20,22,27,42]
-# flowers_good = [0,1,3,6,10,14,23,24,29,34,35,36,37,39,41,43,46,47,48]
-# flowers_time = np.arange(50)
-# flowers_time = np.delete(flowers_time, flowers_bad+flowers_good)
-# flowers_time = flowers_time.tolist()
-floris_bad = [4,5,10,21,24,25,34,41,44]
-floris_good = [3,8,13,23,27,29,35,36,37,39,43,47]
-floris_time = np.arange(50)
-floris_time = np.delete(floris_time, floris_bad+floris_good)
-floris_time = floris_time.tolist()
-
+floris_success = [1,2,3,4,5,7,9,11,14,15,17,18,20,23,24,25,26,27,30,33,34,35,38,41,43,46,47,48]
+floris_numerical = [22]
+floris_timeout = [0,6,8,10,12,13,16,19,21,28,29,31,32,36,37,39,40,42,44,45,49]
 
 # Format plots
 font = 14
@@ -83,60 +75,56 @@ for i in range(multi):
         if not sol.show_flowers_feasibility():
             print("FLOWERS " + str(i))
             print(sol.show_flowers_feasibility(inf=True))
-        if i in flowers_bad:
-            ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='tab:orange', alpha=0.5)
-        elif i in flowers_good:
+        if i in flowers_numerical:
+            ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='tab:blue', alpha=0.5)
+        elif i in flowers_success:
             ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='tab:green', alpha=0.5)
             # sol.show_flowers_optimization(stats=True)
-            ax = sol.plot_flowers_layout()
-            ax.set(title='FLOWERS ' + str(i))   
-        elif i in flowers_inf:
-            ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='tab:red', alpha=0.5)
-        else:
-            ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='tab:blue', alpha=0.5)
-
+            # ax = sol.plot_flowers_layout()
+            # ax.set(title='FLOWERS ' + str(i))   
+        elif i in flowers_infeasible:
+            ax0.plot(sol.layout_flowers[0]/sol.diameter, sol.layout_flowers[1]/sol.diameter, "o", markersize=6, color='tab:orange', alpha=0.5)
+        
+        sol.flowers.layout_x = sol.layout_flowers[0]
+        sol.flowers.layout_y = sol.layout_flowers[1]
+        aep_flowers_real[i] = sol.flowers.calculate_aep()
 
     if floris_flag:
         file_name = 'solutions/floris_' + str(i) + '.p'
         sol = pickle.load(open(file_name,'rb'))
         time_floris[i] = sol.floris_solution['time']
         aep_floris[i] = sol.aep_floris
-        if i in floris_bad:
-            ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='tab:orange', alpha=0.5)
-        elif i in floris_good:
-            ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='tab:green', alpha=0.5)
-        else:
+        if not sol.show_floris_feasibility():
+            print("FLORIS " + str(i))
+            print(sol.show_floris_feasibility(inf=True))
+        if i in floris_numerical:
             ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='tab:blue', alpha=0.5)
-
-        if i == 24:
-            file_name = 'debug.p'
-            sol = pickle.load(open(file_name,'rb'))
-            sol.show_floris_optimization(stats=True)
-            ax = sol.plot_floris_layout()
-            # ax.set(title='FLORIS ' + str(i))
-            ax.set(title='Debug')
-        
-        # if i in floris_bad:
-            # print("FLORIS " + str(i))
-            # sol.show_floris_feasibility()
+        elif i in floris_success:
+            ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='tab:green', alpha=0.5)
+            # ax = sol.plot_floris_layout()
+            # ax.set(title='FLORIS ' + str(i))   
+        elif i in floris_timeout:
+            ax00.plot(sol.layout_floris[0]/sol.diameter, sol.layout_floris[1]/sol.diameter, "o", markersize=6, color='tab:purple', alpha=0.5)
 
 # Plot optimal AEP and solver time
 if flowers_flag:
-    ax1.plot(time_flowers[flowers_good]/60, aep_flowers[flowers_good]/1e9, 'o', color='tab:green', alpha=0.8)
-    ax1.plot(time_flowers[flowers_time]/60, aep_flowers[flowers_time]/1e9, 'o', color='tab:blue', alpha=0.8)
-    ax1.plot(time_flowers[flowers_bad]/60, aep_flowers[flowers_bad]/1e9, 'o', color='tab:orange',alpha=0.8)
-    ax1.plot(time_flowers[flowers_inf]/60, aep_flowers[flowers_inf]/1e9, 'o', color='tab:red',alpha=0.8)
+    ax1.plot(time_flowers[flowers_success]/3600, aep_flowers[flowers_success]/1e9, 'o', color='tab:green', alpha=0.8)
+    ax1.plot(time_flowers[flowers_numerical]/3600, aep_flowers[flowers_numerical]/1e9, 'o', color='tab:blue',alpha=0.8)
+    ax1.plot(time_flowers[flowers_infeasible]/3600, aep_flowers[flowers_infeasible]/1e9, 'o', color='tab:orange',alpha=0.8)
+    ax1.plot(time_flowers/3600, aep_flowers_real/1e9, 'o', color='tab:red',alpha=0.8)
     # ax1.boxplot(time_flowers/60, vert=False, positions=[np.mean(aep_flowers) / 1e9], widths=[5], manage_ticks=False)
 if floris_flag:
-    ax11.plot(time_floris[floris_good+floris_time]/60, aep_floris[floris_good+floris_time]/1e9, 'o', color='tab:orange', alpha=0.8)
-    ax11.plot(time_floris[floris_bad]/60, aep_floris[floris_bad]/1e9, '*', color='tab:orange',alpha=0.8)
+    ax11.plot(time_floris[floris_success]/60, aep_floris[floris_success]/1e9, 'o', color='tab:green', alpha=0.8)
+    ax11.plot(time_floris[floris_numerical]/60, aep_floris[floris_numerical]/1e9, 'o', color='tab:blue',alpha=0.8)
+    ax11.plot(time_floris[floris_timeout]/60, aep_floris[floris_timeout]/1e9, 'o', color='tab:purple',alpha=0.8)
     # ax1.boxplot(time_floris/60, vert=False, positions=[np.mean(aep_floris) / 1e9], widths=[5], manage_ticks=False)
 
-ax1.set(xlabel="Time (min)", ylabel="AEP (GWh)", xlim=0, title='FLOWERS')
+ax1.set(xlabel="Time (hr)", ylabel="AEP (GWh)", xlim=0, title='FLOWERS')
 ax1.grid(True)
-ax1.legend(['Success','Timeout','Fail','Infeasible'])
+ax1.legend(['Success','Numerics','Failure','FLOWERS'])
 ax11.set(xlabel="Time (min)", ylabel="AEP (GWh)", xlim=0, title='FLORIS')
 ax11.grid(True)
+ax11.legend(['Success','Numerics','Timeout'])
 # Plot wind farm boundary
 verts = sol.boundaries/sol.diameter
 for i in range(len(verts)):
@@ -161,6 +149,9 @@ ax0.grid()
 ax00.grid()
 
 # Plot wind rose
+wr = tl.resample_wind_direction(sol.wind_rose, wd = np.arange(0, 360, 45))
+wr = tl.resample_average_ws_by_wd(wr)
+print(wr)
 vis.plot_wind_rose(sol.wind_rose, ax=ax3)
 
 # Plot generic initial layout
@@ -175,17 +166,17 @@ print('Number of Cases:              {:.0f}'.format(multi))
 print('FLOWERS Terms:                {:.0f}'.format(sol.terms_flowers))
 print('FLORIS Bins:                  {:.0f}'.format(sol.bins_floris))
 print()
-print('FLOWERS AEP Mean:    {:.3f} GWh'.format(np.mean(aep_flowers[flowers_good+flowers_bad+flowers_time]) / 1e9))
-print('FLOWERS AEP Std:       {:.3f} GWh'.format(np.std(aep_flowers[flowers_good+flowers_bad+flowers_time]) / 1e9))
-print('FLORIS AEP Mean:     {:.3f} GWh'.format(np.mean(aep_floris) / 1e9))
-print('FLORIS AEP Std:       {:.3f} GWh'.format(np.std(aep_floris) / 1e9))
+print('FLOWERS AEP Mean:    {:.3f} GWh'.format(np.mean(aep_flowers[flowers_success+flowers_numerical]) / 1e9))
+print('FLOWERS AEP Std:       {:.3f} GWh'.format(np.std(aep_flowers[flowers_success+flowers_numerical]) / 1e9))
+print('FLORIS AEP Mean:     {:.3f} GWh'.format(np.mean(aep_floris[floris_success+floris_numerical]) / 1e9))
+print('FLORIS AEP Std:       {:.3f} GWh'.format(np.std(aep_floris[floris_success+floris_numerical]) / 1e9))
 print()
-print('FLOWERS Time Mean:    {:.2f} s'.format(np.mean(time_flowers[flowers_good+flowers_bad+flowers_time])))
-print('FLOWERS Time Std:     {:.2f} s'.format(np.std(time_flowers[flowers_good+flowers_bad+flowers_time])))
-print('FLOWERS Time Median:    {:.2f} s'.format(np.median(time_flowers[flowers_good+flowers_bad+flowers_time])))
-print('FLORIS Time Mean:     {:.2f} s'.format(np.mean(time_floris)))
-print('FLORIS Time Std:      {:.2f} s'.format(np.std(time_floris)))
-print('FLORIS Time Median:     {:.2f} s'.format(np.median(time_floris)))
+print('FLOWERS Time Mean:    {:.2f} hr'.format(np.mean(time_flowers[flowers_success+flowers_numerical])/3600))
+print('FLOWERS Time Std:     {:.2f} s'.format(np.std(time_flowers[flowers_success+flowers_numerical])))
+print('FLOWERS Time Median:    {:.2f} hr'.format(np.median(time_flowers[flowers_success+flowers_numerical])/3600))
+print('FLORIS Time Mean:     {:.2f} hr'.format(np.mean(time_floris[floris_success+floris_numerical])/3600))
+print('FLORIS Time Std:      {:.2f} s'.format(np.std(time_floris[floris_success+floris_numerical])))
+print('FLORIS Time Median:     {:.2f} hr'.format(np.median(time_floris[floris_success+floris_numerical])/3600))
 # print('Conv. Time Mean:     {:.2f} s'.format(np.mean(np.sort(time)[:-8])))
 # print('Conv. Time Std:      {:.2f} s'.format(np.std(np.sort(time)[:-8])))
 # print()

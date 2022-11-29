@@ -7,12 +7,13 @@ import numpy as np
 import os
 from pyoptsparse.pyOpt_history import History
 from scipy.interpolate import NearestNDInterpolator
+from scipy.spatial.distance import cdist
+from shapely.geometry import Polygon, Point, LineString
 import time
 from scipy.spatial.distance import cdist
 from shapely.geometry import Polygon, Point, LineString
 
 import floris.tools as wfct
-import floris.tools.optimization.pyoptsparse as opt
 from floris.tools.optimization.layout_optimization.layout_optimization_pyoptsparse import LayoutOptimizationPyOptSparse
 
 import flowers_interface as fi
@@ -410,11 +411,11 @@ class ModelComparison:
 
     def run_flowers_optimization(
         self, 
-        solver='SNOPT',
-        scale_dv=1.0,
         history_file='',
         output_file='',
         timer=86400,
+        o_tol=1e-4,
+        f_tol=1e-4,
         ):
         """
         Run layout optimization with FLOWERS. 
@@ -457,15 +458,6 @@ class ModelComparison:
 
         print("Solving FLOWERS optimization.")
 
-        # Verify choice of solver
-        solver_choices = ["SNOPT"]
-
-        if solver not in solver_choices:
-            raise ValueError(
-                "Solver must be one supported by pyOptSparse: "
-                + str(solver_choices)
-            )
-
         # Verify required file names
         if not history_file:
             raise ValueError('History file name must be specified.')
@@ -476,30 +468,27 @@ class ModelComparison:
         # Adjust verbose output file name
         verbose_file = output_file[:-3] + 'verb'
 
-        # TODO: enable inputting more optimizer options
-
         # Verify interface has been initialized
         if not self.opt_init:
             raise RuntimeError("Optimization has not been initialized.")
 
         # Initialize layout optimization class
-        model = lyt.LayoutOptimization(self.flowers, self.boundaries, scale_dv=scale_dv)
-        tmp = opt.optimization.Optimization(
-            model=model, 
-            solver=solver,
+        model = lyt.LayoutOptimization(
+            self.flowers, 
+            self.boundaries,
             storeHistory=history_file,
             optOptions={
                 'Print file': verbose_file, 
                 'Summary file': output_file,
-                "Major optimality tolerance": 1e-4,
-                "Major feasibility tolerance": 1e-4,
+                "Major optimality tolerance": o_tol,
+                "Major feasibility tolerance": f_tol,
                 "Scale option": 2,
                 },
             timeLimit=timer,
-        )
+            )
 
         # Run solver and post-process results
-        sol = tmp.optimize()
+        sol = model.optimize()
         self._save_flowers_solution(sol, history_file)
         self.opt_flowers = True
     
@@ -509,6 +498,8 @@ class ModelComparison:
         history_file='',
         output_file='',
         timer=86400,
+        o_tol=1e-4,
+        f_tol=1e-4,
         ):
         """
         Run layout optimization with FLORIS. 
@@ -584,8 +575,8 @@ class ModelComparison:
             optOptions={
                 'Print file': verbose_file, 
                 'Summary file': output_file,
-                "Major optimality tolerance": 1e-4,
-                "Major feasibility tolerance": 1e-4,
+                "Major optimality tolerance": o_tol,
+                "Major feasibility tolerance": f_tol,
                 "Scale option": 2,
                 },
             timeLimit=timer,
@@ -656,6 +647,7 @@ class ModelComparison:
         yy = val['y']
 
         # Store history
+        # TODO: store SNOPT exit code
         self.flowers_solution = dict()
         self.flowers_solution['iter'] = len(xx) - 1
         # self.flowers_solution['opt'] = val['optimality'].flatten()
@@ -808,6 +800,43 @@ class ModelComparison:
             return viol
         else:
             return feasible
+    
+    def show_floris_feasibility(self, inf=False):
+
+        feasible=True
+        viol = {}
+        # Spacing constraint
+        x = self.layout_floris[0]
+        y = self.layout_floris[1]
+
+        # Sped up distance calc here using vectorization
+        locs = np.vstack((x, y)).T
+        distances = cdist(locs, locs)
+        arange = np.arange(distances.shape[0])
+        distances[arange, arange] = 1e10
+        dist = np.min(distances, axis=0)
+        if np.min(dist) <= 1.99 * self.diameter:
+            feasible = False
+            viol['Spacing [D]'] = np.min(dist)/self.diameter
+        
+        # Boundary constraint
+        boundary_polygon = Polygon(self.boundaries)
+        boundary_line = LineString(self.boundaries)
+        boundary_con = np.zeros(len(x))
+        for i in range(len(x)):
+            loc = Point(x[i], y[i])
+            boundary_con[i] = loc.distance(boundary_line) #NaNsafe, or 1 to 5 m inside boundary
+            if boundary_polygon.contains(loc)==True:
+                boundary_con[i] *= -1.0
+        if np.max(boundary_con) >  1:
+            feasible = False
+            viol['Boundary [m]'] = np.max(boundary_con)
+        
+        # Output
+        if inf:
+            return viol
+        else:
+            return feasible
 
     def show_optimization_comparison(self, stats=False):
         """
@@ -913,7 +942,7 @@ class ModelComparison:
         
         print("============================")
 
-    def plot_flowers_layout(self, ax=None):
+    def plot_flowers_layout(self, ax=None, color_initial="tab:blue", color_final="tab:orange"):
         """
         Plot the initial and optimal layouts of the FLOWERS
         optimization.
@@ -934,6 +963,8 @@ class ModelComparison:
             x_init=self.layout_x, 
             y_init=self.layout_y, 
             D=self.diameter,
+            color_initial=color_initial,
+            color_final=color_final
         )
         # plt.legend(
         #     ["Initial", "Final"],
@@ -942,7 +973,7 @@ class ModelComparison:
         ax.set(title="FLOWERS")
         return ax
     
-    def plot_floris_layout(self, ax=None):
+    def plot_floris_layout(self, ax=None, color_initial="tab:blue", color_final="tab:orange"):
         """
         Plot the initial and optimal layouts of the FLORIS
         optimization.
@@ -963,6 +994,8 @@ class ModelComparison:
             x_init=self.layout_x, 
             y_init=self.layout_y, 
             D=self.diameter,
+            color_initial=color_initial,
+            color_final=color_final
         )
         # plt.legend(
         #     ["Initial", "Final"],

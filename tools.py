@@ -71,7 +71,7 @@ def random_layout(boundaries=[], n_turb=0, D=126.0, min_dist=2.0, idx=None):
 
     return xx, yy
 
-def load_layout(name):
+def load_layout(name, boundaries=False):
     """
     TODO: fill in description
 
@@ -144,8 +144,31 @@ def load_layout(name):
             402.24,
             0.00,
         ])
-        
-    return layout_x, layout_y
+        bound = [
+            (2714.4, 4049.4),
+            (2132.7, 938.8),
+            (2092.8, 591.6),
+            (2078.9, 317.3),
+            (2076.1, 148.5),
+            (2076.6, 0.0),
+            (2076.5, 6.5),
+            (1208.6, 847.0),
+            (0.0, 2017.7),
+            (1496.7, 4027.2),
+            (1531.8, 4006.2),
+            (1931.2, 3818.5),
+            (2058.3, 3783.6),
+            (2192.8, 3792.9),
+            (2316.8, 3846.4),
+            (2416.0, 3939.1),
+            (2528.6, 4089.0),
+            (2550.9, 4126.3)
+        ]
+    
+    if boundaries:
+        return layout_x, layout_y, bound
+    else:
+        return layout_x, layout_y
 
 ###########################################################################
 # Wind rose sampling

@@ -85,7 +85,7 @@ def plot_wind_rose(
             reversed(rects), 
             ws_labels, 
             loc="lower left",
-            bbox_to_anchor=(.55 + np.cos(.55)/2, .5 + np.sin(.55)/2),
+            bbox_to_anchor=(.55 + np.cos(.55)/2, .4 + np.sin(.55)/2),
             **legend_kwargs
             )
         ax.set_theta_direction(-1)
@@ -100,7 +100,7 @@ def plot_wind_rose(
 # Layout methods
 ###########################################################################
 
-def plot_layout(layout_x, layout_y, D=126.0, norm=True, ax=None):
+def plot_layout(layout_x, layout_y, D=126.0, boundaries=None, norm=True, ax=None, color="tab:blue"):
     """
     Plot a wind farm layout. The turbine markers are properly scaled
     relative to the domain.
@@ -137,9 +137,19 @@ def plot_layout(layout_x, layout_y, D=126.0, norm=True, ax=None):
         xlab = 'x [m]'
         ylab = 'y [m]'
 
+    if boundaries is not None:
+        verts = np.array(boundaries)/D
+        for i in range(len(verts)):
+            if i == len(verts) - 1:
+                ax.plot([verts[i][0], verts[0][0]], [verts[i][1], verts[0][1]], "black")
+            else:
+                ax.plot(
+                    [verts[i][0], verts[i + 1][0]], [verts[i][1], verts[i + 1][1]], "black"
+                )
+
     ax.scatter(xx, yy, s=0.01)
     for x, y in zip(xx, yy):
-        ax.add_patch(plt.Circle((x, y), r))
+        ax.add_patch(plt.Circle((x, y), r, color=color))
     ax.set(xlabel=xlab, ylabel=ylab, aspect='equal')
     ax.grid()
 
@@ -152,6 +162,8 @@ def plot_optimal_layout(
     x_init=[], 
     y_init=[], 
     D=126.0,
+    color_initial="tab:blue",
+    color_final="tab:orange",
     norm=True, 
     ax=None
     ):
@@ -212,12 +224,12 @@ def plot_optimal_layout(
         ylab = 'y [m]'
 
     # Plot turbine locations
-    ax.scatter(x0, y0, s=0.01)
-    ax.scatter(x1, y1, s=0.01)
+    ax.scatter(x0, y0, s=0.01, color=color_initial)
+    ax.scatter(x1, y1, s=0.01, color=color_final)
     for x, y in zip(x0, y0):
-        ax.add_patch(plt.Circle((x, y), r, color='#1f77b4'))
+        ax.add_patch(plt.Circle((x, y), r, color=color_initial))
     for x, y in zip(x1, y1):
-        ax.add_patch(plt.Circle((x, y), r, color='#ff7f0e'))
+        ax.add_patch(plt.Circle((x, y), r, color=color_final))
     ax.set(xlabel=xlab, ylabel=ylab, aspect='equal')
     ax.legend(['Initial','Final'],markerscale=50)
     # leg.legendHandles[0]._legmarker.set_markersize(6)

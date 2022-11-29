@@ -7,12 +7,15 @@ import model as set
 import tools as tl
 import visualization as vis
 import matplotlib.pyplot as plt
+import warnings
 
 """
 This file compares the AEP between FLOWERS and FLORIS for three different
 wind roses and layouts. 
 
 """
+
+warnings.filterwarnings("ignore")
 
 # Overall parameters
 D = 126.0
@@ -48,7 +51,7 @@ xx = np.linspace(0., 70*D, 10)
 layout_x, layout_y = np.meshgrid(xx,xx)
 layout_x = layout_x.flatten()
 layout_y = layout_y.flatten()
-wind_rose = tl.load_wind_rose(2)
+wind_rose = tl.load_wind_rose(4)
 
 fig2 = plt.figure(figsize=(12,4.75))
 ax21 = fig2.add_subplot(121, polar=True)
