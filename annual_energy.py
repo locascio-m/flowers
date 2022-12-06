@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore")
 
 # Overall parameters
 D = 126.0
-num_terms = 7
+num_terms = 181
 wd_resolution = 1.0
 ws_avg = True
 
@@ -27,6 +27,8 @@ ws_avg = True
 print("Starting Case 1.")
 
 # Define layout and wind rose
+# layout_x = np.array([0., 375.])
+# layout_y = np.array([0., 0.])
 layout_x = D * np.array([0.0, 5., 10.])
 layout_y = D * np.array([0.0, 0.0, 0.0])
 wind_rose = tl.load_wind_rose(1)
@@ -43,8 +45,28 @@ geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg)
 
 print("Completing Case 1.")
 
-### Case 2: Large Gridded Wind Farm
+### Case 2: Medium Random Wind Farm
 print("Starting Case 2.")
+
+# Define layout and wind rose
+boundaries = [(0.0, 0.0), (24*D, 0.0), (24*D, 24*D), (0.0, 24*D)]
+layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=25, idx=21)
+wind_rose = tl.load_wind_rose(6)
+
+fig3 = plt.figure(figsize=(12,4.75))
+ax31 = fig3.add_subplot(121, polar=True)
+ax32 = fig3.add_subplot(122)
+vis.plot_wind_rose(wind_rose, ax=ax31)
+vis.plot_layout(layout_x, layout_y, ax=ax32)
+
+# Initialize and compute AEP
+geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
+geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg)
+
+print("Completing Case 2.")
+
+### Case 3: Large Gridded Wind Farm
+print("Starting Case 3.")
 
 # Define layout and wind rose
 xx = np.linspace(0., 70*D, 10)
@@ -58,26 +80,6 @@ ax21 = fig2.add_subplot(121, polar=True)
 ax22 = fig2.add_subplot(122)
 vis.plot_wind_rose(wind_rose, ax=ax21)
 vis.plot_layout(layout_x, layout_y, ax=ax22)
-
-# Initialize and compute AEP
-geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
-geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg)
-
-print("Completing Case 2.")
-
-### Case 3: Random Wind Farm
-print("Starting Case 3.")
-
-# Define layout and wind rose
-boundaries = [(0.0, 0.0), (24*D, 0.0), (24*D, 24*D), (0.0, 24*D)]
-layout_x, layout_y = tl.random_layout(boundaries=boundaries, n_turb=25, idx=21)
-wind_rose = tl.load_wind_rose(6)
-
-fig3 = plt.figure(figsize=(12,4.75))
-ax31 = fig3.add_subplot(121, polar=True)
-ax32 = fig3.add_subplot(122)
-vis.plot_wind_rose(wind_rose, ax=ax31)
-vis.plot_layout(layout_x, layout_y, ax=ax32)
 
 # Initialize and compute AEP
 geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
