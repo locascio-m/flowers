@@ -41,7 +41,7 @@ class ModelComparison:
 
     """
 
-    def __init__(self, wind_rose, layout_x, layout_y, model="jensen"):
+    def __init__(self, wind_rose, layout_x, layout_y, model="jensen", TI=0.06):
 
         self.wind_rose = wind_rose
         self.layout_x = layout_x
@@ -62,7 +62,8 @@ class ModelComparison:
 
         self.floris.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
-            wind_shear=0)
+            wind_shear=0,
+            turbulence_intensity=TI)
         
         # Initialize wind direction-speed frequency array for AEP
         wd_array = np.array(self.wind_rose["wd"].unique(), dtype=float)
@@ -82,7 +83,8 @@ class ModelComparison:
         self.post = wfct.floris_interface.FlorisInterface("./input/gauss.yaml")
         self.post.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
-            wind_shear=0)
+            wind_shear=0,
+            turbulence_intensity=TI)
         self.post_freq = self.freq_floris
 
         self.post.reinitialize(
@@ -92,10 +94,16 @@ class ModelComparison:
 
         # Import other parameters
         # TODO: import wake expansion rate from FLORIS
-        k = 0.05 
         self.diameter = self.floris.floris.farm.rotor_diameters[0][0][0]
 
         # Initialize FLOWERS interface
+        if TI <= 0.09:
+            k0 = 0.04
+        else:
+            k0 = 0.075
+        # k = 0.*(len(layout_x) - 2) + k0
+        k = k0 * (1 + 2 * np.tanh((len(layout_x) - 2) / 50))
+
         self.flowers = fi.Flowers(
             self.wind_rose,
             self.layout_x,
@@ -301,7 +309,7 @@ class ModelComparison:
             aep = self.floris.get_farm_AEP(freq=self.freq_floris)
             return aep
 
-    def compare_aep(self, iter=5, num_terms=None, ws_avg=False, wd_resolution=1.0):
+    def compare_aep(self, iter=5, num_terms=None, ws_avg=False, wd_resolution=1.0, display=True):
         """
         Compute farm AEP using both models and compare. The calculation is
             repeated an optional number of instances to average computation time.
@@ -341,21 +349,23 @@ class ModelComparison:
         time_flowers_final = np.mean(time_flowers)
         aep_floris_final = np.mean(aep_floris)
         time_floris_final = np.mean(time_floris)
-
-        print("============================")
-        print('    AEP Results    ')
-        print('    Number of Turbines: {:.0f}'.format(len(self.layout_x)))
-        print('    FLOWERS Terms: {:.0f}'.format(num_terms))
-        print('    FLORIS Bins:   {:.0f}'.format(int(360/wd_resolution)))
-        print('    FLORIS Average WS: ' + str(ws_avg))
-        print("----------------------------")
-        print("FLORIS  AEP:      {:.3f} GWh".format(aep_floris_final / 1.0e9))
-        print("FLOWERS AEP:      {:.3f} GWh".format(aep_flowers_final / 1.0e9))
-        print("Percent Difference:  {:.1f}%".format((aep_flowers_final - aep_floris_final) / aep_floris_final * 100))
-        print("FLORIS Time:       {:.3f} s".format(time_floris_final))
-        print("FLOWERS Time:      {:.3f} s".format(time_flowers_final))
-        print("Factor of Improvement: {:.1f}x".format(time_floris_final/time_flowers_final))
-        print("============================")
+        if display:
+            print("============================")
+            print('    AEP Results    ')
+            print('    Number of Turbines: {:.0f}'.format(len(self.layout_x)))
+            print('    FLOWERS Terms: {:.0f}'.format(num_terms))
+            print('    FLORIS Bins:   {:.0f}'.format(int(360/wd_resolution)))
+            print('    FLORIS Average WS: ' + str(ws_avg))
+            print("----------------------------")
+            print("FLORIS  AEP:      {:.3f} GWh".format(aep_floris_final / 1.0e9))
+            print("FLOWERS AEP:      {:.3f} GWh".format(aep_flowers_final / 1.0e9))
+            print("Percent Difference:  {:.1f}%".format((aep_flowers_final - aep_floris_final) / aep_floris_final * 100))
+            print("FLORIS Time:       {:.3f} s".format(time_floris_final))
+            print("FLOWERS Time:      {:.3f} s".format(time_flowers_final))
+            print("Factor of Improvement: {:.1f}x".format(time_floris_final/time_flowers_final))
+            print("============================")
+        else:
+            return (aep_flowers_final, aep_floris_final), (time_flowers_final, time_floris_final)
 
     ###########################################################################
     # Optimization methods

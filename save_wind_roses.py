@@ -14,7 +14,7 @@ user-provided index.
 
 """
 
-wind_rose = tl.toolkit_wind_rose(lat = 41.05, long = -70.65)
+wind_rose = tl.toolkit_wind_rose(lat = 41.09, long = -72.2)
 
 vis.plot_wind_rose(wind_rose)
 

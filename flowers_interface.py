@@ -53,6 +53,79 @@ class Flowers():
 
         # Resample wind rose for average wind speed per wind direction
         wr = self.wind_rose.copy(deep=True)
+        cp_tmp = tl.cp_lookup(wr.ws)
+        a0_tmp = 2 * np.sum(cp_tmp * wr.freq_val * wr.ws**3)
+        wr = tl.resample_average_ws_by_wd(wr)
+
+        # Transform wind direction to polar angle 
+        wr["wd"] = np.remainder(450 - wr.wd, 360)
+        wr.sort_values("wd", inplace=True)
+        wr = wr.append(wr.iloc[0])
+
+        # Look up thrust coefficient for each wind direction bin
+        ct = tl.ct_lookup(wr.ws)
+        ct = ct * np.array(ct < 1) + np.ones_like(ct) * np.array(ct >= 1) * 0.99999
+
+        cp = tl.cp_lookup(wr.ws)
+        
+        # c0 = cp * wr.freq_val * wr.ws**3
+        c1 = cp * wr.freq_val * wr.ws**3 * (1 - np.sqrt(1 - ct))
+        c2 = cp * wr.freq_val * wr.ws**3 * (1 - np.sqrt(1 - ct))**2
+        # c3 = cp * wr.freq_val * wr.ws**3 * (1 - np.sqrt(1 - ct))**3
+
+        # Fourier expansions
+        # c0ft = 2 * np.fft.rfft(c0)
+        # a0 = c0ft.real[0]
+
+        c1ft = 2 * np.fft.rfft(c1)
+        a1 = c1ft.real
+        b1 = -c1ft.imag
+
+        c2ft = 2 * np.fft.rfft(c2)
+        a2 = c2ft.real
+        b2 = -c2ft.imag
+
+        # c3ft = 2 * np.fft.rfft(c3)
+        # a3 = c3ft.real
+        # b3 = -c3ft.imag
+
+        # Truncate Fourier series
+        if num_terms > 0 and num_terms <= len(a1):
+            a1 = a1[0:num_terms]
+            b1 = b1[0:num_terms]
+            a2 = a2[0:num_terms]
+            b2 = b2[0:num_terms]
+            # a3 = a3[0:num_terms]
+            # b3 = b3[0:num_terms]
+        
+        self.fs = pd.DataFrame({
+            'a0': a0_tmp, #a0_tmp
+            'a1': a1,
+            'b1': b1,
+            'a2': a2,
+            'b2': b2,
+            # 'a3': a3,
+            # 'b3': b3,
+            })
+
+    def fourier_coefficients_legacy(self, num_terms=0):
+        """
+        Compute the Fourier series expansion coefficients from the wind rose.
+        Modifies the Flowers interface in place to add a Fourier coefficients
+        dataframe:
+            fs (pandas:dataframe): Fourier coefficients used to expand the wind rose:
+                - 'a_free': real coefficients of freestream component
+                - 'a_wake': real coefficients of wake component
+                - 'b_wake': imaginary coefficients of wake component
+
+        Args:
+            num_terms (int, optional): the number of Fourier modes to save in the range
+                [1, ceiling(num_wind_directions/2)]
+        
+        """
+
+        # Resample wind rose for average wind speed per wind direction
+        wr = self.wind_rose.copy(deep=True)
         wr = tl.resample_average_ws_by_wd(wr)
 
         # Transform wind direction to polar angle 
@@ -64,70 +137,31 @@ class Flowers():
         ct = np.zeros(len(wr.ws))
         ct = tl.ct_lookup(wr.ws)
         ct = ct * np.array(ct < 1) + np.ones_like(ct) * np.array(ct >= 1) * 0.99999
-
-        cp = np.zeros(len(wr.ws))
-        cp = tl.cp_lookup(wr.ws)
+        # ct = np.zeros(len(wr.ws))
+        # for wd in range(len(wr.ws)):
+        #     ct[wd] = tl.ct_lookup(wr.ws[wd])
+        #     if ct[wd] >= 1.0:
+        #         ct[wd] = 0.99999
         
-        c0 = cp * wr.freq_val * wr.ws**3
-        c1 = cp * wr.freq_val * wr.ws**3 * (1 - np.sqrt(1 - ct))
-        c2 = cp * wr.freq_val * wr.ws**3 * (1 - np.sqrt(1 - ct))**2
-        c3 = cp * wr.freq_val * wr.ws**3 * (1 - np.sqrt(1 - ct))**3
+        # Fourier expansion of freestream term 
+        g = 1 / (2 * np.pi) * wr.ws * wr.freq_val
+        gft = 2 * np.fft.rfft(g)
+        a_free =  gft.real
 
-        # Fourier expansions
-        c0ft = 2 * np.fft.rfft(c0)
-        a0 = c0ft.real
+        # Fourier expansion of wake deficit term
+        h = 1 / (2 * np.pi) * (1 - np.sqrt(1 - ct)) * wr.ws * wr.freq_val
+        hft = 2 * np.fft.rfft(h)
+        a_wake =  hft.real
+        b_wake = -hft.imag
 
-        c1ft = 2 * np.fft.rfft(c1)
-        a1 = c1ft.real
-        b1 = -c1ft.imag
+        # Truncate Fourier series to specified number of modes
+        if num_terms > 0 and num_terms <= len(a_free):
+            a_free = a_free[0:num_terms]
+            a_wake = a_wake[0:num_terms]
+            b_wake = b_wake[0:num_terms]
 
-        c2ft = 2 * np.fft.rfft(c2)
-        a2 = c2ft.real
-        b2 = -c2ft.imag
-
-        c3ft = 2 * np.fft.rfft(c3)
-        a3 = c3ft.real
-        b3 = -c3ft.imag
-
-        # Truncate Fourier series
-        if num_terms > 0 and num_terms <= len(a0):
-            a0 = a0[0:num_terms]
-            a1 = a1[0:num_terms]
-            b1 = b1[0:num_terms]
-            a2 = a2[0:num_terms]
-            b2 = b2[0:num_terms]
-            a3 = a3[0:num_terms]
-            b3 = b3[0:num_terms]
-        
-        self.fs = pd.DataFrame({
-            'a0': a0,
-            'a1': a1,
-            'b1': b1,
-            'a2': a2,
-            'b2': b2,
-            'a3': a3,
-            'b3': b3,
-            })
-
-        # # Fourier expansion of freestream term 
-        # g = 1 / (2 * np.pi) * wr.ws * wr.freq_val
-        # gft = 2 * np.fft.rfft(g)
-        # a_free =  gft.real
-
-        # # Fourier expansion of wake deficit term
-        # h = 1 / (2 * np.pi) * (1 - np.sqrt(1 - ct)) * wr.ws * wr.freq_val
-        # hft = 2 * np.fft.rfft(h)
-        # a_wake =  hft.real
-        # b_wake = -hft.imag
-
-        # # Truncate Fourier series to specified number of modes
-        # if num_terms > 0 and num_terms <= len(a_free):
-        #     a_free = a_free[0:num_terms]
-        #     a_wake = a_wake[0:num_terms]
-        #     b_wake = b_wake[0:num_terms]
-
-        # # Compile Fourier coefficients
-        # self.fs = pd.DataFrame({'a_free': a_free, 'a_wake': a_wake, 'b_wake': b_wake})
+        # Compile Fourier coefficients
+        self.fs = pd.DataFrame({'a_free': a_free, 'a_wake': a_wake, 'b_wake': b_wake})
 
     def calculate_aep(self):
         """
@@ -139,7 +173,7 @@ class Flowers():
         """
 
         # Power component from freestream
-        p0 = self.fs.a0[0] * np.pi
+        p0 = self.fs.a0[0] * np.pi 
 
         # Reshape relative positions into symmetric 2D array
         X = self.layout_x - np.reshape(self.layout_x,(-1,1))
@@ -156,7 +190,7 @@ class Flowers():
 
         # Set up mask for rotor swept area
         mask_area = np.array(R <= 1, dtype=int)
-        mask_val = self.fs.a0[0] * np.pi
+        mask_val = self.fs.a0 * np.pi
 
         # Critical polar angle of wake edge (as a function of distance from turbine)
         theta_c = np.abs(np.arctan(
@@ -170,8 +204,8 @@ class Flowers():
             1 + (theta_c**2 * self.k * R) / (3 * (self.k * R + 1)))
         p2 = self.fs.a2[0] * theta_c / (self.k * R + 1)**4 * (
             1 + (2 * theta_c**2 * self.k * R) / (3 * (self.k * R + 1)))
-        p3 = self.fs.a3[0] * theta_c / (self.k * R + 1)**6 * (
-            1 + (theta_c**2 * self.k * R) / (self.k * R + 1))
+        # p3 = self.fs.a3[0] * theta_c / (self.k * R + 1)**6 * (
+        #     1 + (theta_c**2 * self.k * R) / (self.k * R + 1))
 
         # Reshape variables for vectorized calculations (num_turbines, num_field_pts)
         n = np.arange(1, len(self.fs.b1))
@@ -179,8 +213,8 @@ class Flowers():
         b1 = np.swapaxes(np.tile(np.expand_dims(self.fs.b1[1:], axis=(1,2)),np.shape(R.T)),0,2)
         a2 = np.swapaxes(np.tile(np.expand_dims(self.fs.a2[1:], axis=(1,2)),np.shape(R.T)),0,2)
         b2 = np.swapaxes(np.tile(np.expand_dims(self.fs.b2[1:], axis=(1,2)),np.shape(R.T)),0,2)
-        a3 = np.swapaxes(np.tile(np.expand_dims(self.fs.a3[1:], axis=(1,2)),np.shape(R.T)),0,2)
-        b3 = np.swapaxes(np.tile(np.expand_dims(self.fs.b3[1:], axis=(1,2)),np.shape(R.T)),0,2)
+        # a3 = np.swapaxes(np.tile(np.expand_dims(self.fs.a3[1:], axis=(1,2)),np.shape(R.T)),0,2)
+        # b3 = np.swapaxes(np.tile(np.expand_dims(self.fs.b3[1:], axis=(1,2)),np.shape(R.T)),0,2)
         R = np.tile(np.expand_dims(R, axis=2),len(n))
         THETA = np.tile(np.expand_dims(THETA, axis=2),len(n))
         theta_c = np.tile(np.expand_dims(theta_c, axis=2),len(n))
@@ -188,25 +222,57 @@ class Flowers():
         # Vectorized contribution of higher Fourier modes
         p1 += np.sum((2 / (n * (self.k * R + 1)**2) * (
             a1 * np.cos(n * THETA) + b1 * np.sin(n * THETA)) * (
-                -np.sin(n * theta_c) + self.k * R / (n**2 * (self.k * R + 1)) * (
+                np.sin(n * theta_c) + self.k * R / (n**2 * (self.k * R + 1)) * (
                     ((theta_c * n)**2 - 2) * np.sin(n * theta_c) + 2*n*theta_c*np.cos(n * theta_c)))), axis=2)
         p2 += np.sum((2 / (n * (self.k * R + 1)**4) * (
             a2 * np.cos(n * THETA) + b2 * np.sin(n * THETA)) * (
-                -np.sin(n * theta_c) + 2 * self.k * R / (n**2 * (self.k * R + 1)) * (
+                np.sin(n * theta_c) + 2 * self.k * R / (n**2 * (self.k * R + 1)) * (
                     ((theta_c * n)**2 - 2) * np.sin(n * theta_c) + 2*n*theta_c*np.cos(n * theta_c)))), axis=2)
-        p3 += np.sum((2 / (n * (self.k * R + 1)**6) * (
-            a3 * np.cos(n * THETA) + b3 * np.sin(n * THETA)) * (
-                -np.sin(n * theta_c) + 3 * self.k * R / (n**2 * (self.k * R + 1)) * (
-                    ((theta_c * n)**2 - 2) * np.sin(n * theta_c) + 2*n*theta_c*np.cos(n * theta_c)))), axis=2)
+        # p3 += np.sum((2 / (n * (self.k * R + 1)**6) * (
+        #     a3 * np.cos(n * THETA) + b3 * np.sin(n * THETA)) * (
+        #         -np.sin(n * theta_c) + 3 * self.k * R / (n**2 * (self.k * R + 1)) * (
+        #             ((theta_c * n)**2 - 2) * np.sin(n * theta_c) + 2*n*theta_c*np.cos(n * theta_c)))), axis=2)
 
         p00 = -3 * p1 + 3 * p2
         p00 = np.ma.masked_where(R0 <= 1,p00)
 
         p = 1.225 * self.D**2 / 16 * 8760 * (p0 + np.sum(p00, axis=1))
 
+        if np.ma.is_masked(p):
+            p = 1.225 * self.D**2 / 16 * 8760 * p0
+
         # Sum power for each turbine 
         aep = np.sum(p)
 
+        return aep
+
+    def calculate_aep_legacy(self):
+        """
+        Compute farm AEP for the given layout and wind rose.
+        
+        Returns:
+            aep (float): farm AEP [Wh]
+        """
+
+        # Power component from freestream
+        p0 = self.fs.a_free[0] * np.pi
+
+        # Reshape relative positions into symmetric 2D array
+        matrix_x = self.layout_x - np.reshape(self.layout_x,(-1,1))
+        matrix_y = self.layout_y - np.reshape(self.layout_y,(-1,1))
+        # matrix_r = np.sqrt(matrix_x**2 + matrix_y**2)
+
+        # Vectorized wake calculation
+        p = self._calculate_wake(matrix_x,matrix_y)
+
+        # Mask turbine interaction with itself
+        np.fill_diagonal(p, 0.)
+
+        # Sum power for each turbine 
+        p_sum = np.sum(p, axis=1)
+        aep = np.sum(tl.cp_lookup(p0 - p_sum)  * (p0 - p_sum)**3)
+        aep *= 0.5 * 1.225 * np.pi * self.D**2 / 4 * 8760
+        
         return aep
 
     def calculate_field(self, X, Y):
@@ -274,10 +340,10 @@ class Flowers():
         mask_val = self.fs.a_free[0] * np.pi
 
         # Critical polar angle of wake edge (as a function of distance from turbine)
-        theta_c = np.abs(np.arctan(
+        theta_c = np.arctan(
             (1 / R + self.k * np.sqrt(1 + self.k**2 - R**(-2)))
             / (-self.k / R + np.sqrt(1 + self.k**2 - R**(-2)))
-            ))
+            )
         theta_c = np.nan_to_num(theta_c)
         
         # Contribution from zero-frequency Fourier mode
