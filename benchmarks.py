@@ -16,10 +16,10 @@ xlabels = [
     'Index',
     'Index',
     'None',
-    'TI [%]',
-    'TI [%]',
-    'k',
-    'Separation [D]'
+    'Turbine Spacing [D]',
+    'Turbine Spacing [D]',
+    'Number of Columns',
+    'Number of Rows'
     ]
 titles = [
     'Case 0: Adding Turbines (Line), 7D Spacing',
@@ -29,13 +29,13 @@ titles = [
     'Case 4: Wind Roses, Free Turbine',
     'Case 5: Wind Roses, 8x8 Grid',
     'Case 6: Resolution, 8x8 Grid',
-    'Case 7: TI, Two Turbines',
-    'Case 8: TI, 8x8 Grid',
-    'Case 9: k, Two Turbines',
-    'Case 10: Spacing, Two Turbines'
+    'Case 7: Spacing, Three Turbines',
+    'Case 8: Spacing, Two Turbines',
+    'Case 9: Adding Columns, Two Rows, 7D Spacing',
+    'Case 10: Adding Rows, Two Columns, 7D Spacing'
 ]
 
-for case in [0,1,2,3,4,5,6,7,8,9,10]:
+for case in [0,3,7,8,9,10]:
 
     file_name = 'solutions/bench' + str(case) + '.p'
 

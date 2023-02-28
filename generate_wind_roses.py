@@ -5,11 +5,13 @@ import pandas as pd
 
 import visualization as vis
 
-wd = np.arange(0., 360., 1.)
+wd = np.arange(0., 360., 0.05)
 ws = 10.
 a = 1
-c = 10
-freq = a*(np.exp(-(wd-270)**2/(2*c)**2))
+c = 2
+# freq = a*(np.exp(-(wd-270)**2/(2*c)**2))
+freq = np.ones(len(wd))
+freq[5400] = 1e7
 freq /= np.sum(freq)
 
 df = pd.DataFrame()

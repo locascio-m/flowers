@@ -40,7 +40,7 @@ flow_field:
 
 wake:
   model_strings:
-    combination_model: sosfs
+    combination_model: fls
     deflection_model: jimenez
     turbulence_model: crespo_hernandez
     velocity_model: jensen

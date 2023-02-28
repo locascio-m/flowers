@@ -41,7 +41,7 @@ class ModelComparison:
 
     """
 
-    def __init__(self, wind_rose, layout_x, layout_y, model="jensen", TI=0.06):
+    def __init__(self, wind_rose, layout_x, layout_y, model="jensen", z0=1e-3):
 
         self.wind_rose = wind_rose
         self.layout_x = layout_x
@@ -59,6 +59,7 @@ class ModelComparison:
         elif model == "gauss":
             input_file = "./input/gauss.yaml"
         self.floris = wfct.floris_interface.FlorisInterface(input_file)
+        TI = 1 / np.log(90/z0)
 
         self.floris.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
@@ -96,14 +97,30 @@ class ModelComparison:
         # TODO: import wake expansion rate from FLORIS
         self.diameter = self.floris.floris.farm.rotor_diameters[0][0][0]
 
-        # Initialize FLOWERS interface
-        if TI <= 0.09:
-            k0 = 0.04
-        else:
-            k0 = 0.075
-        # k = 0.*(len(layout_x) - 2) + k0
-        k = k0 * (1 + 2 * np.tanh((len(layout_x) - 2) / 50))
+        # Calibrate FLOWERS parameter
+        N0 = 100
 
+        # x_length = np.max(layout_x) - np.min(layout_x)
+        # y_length = np.max(layout_y) - np.min(layout_y)
+        # A = x_length*y_length
+        # delta = len(layout_x) * np.pi * self.diameter**2 / (4 * A)
+        delta = 0.8/49
+
+        k0 = 1.7 * 0.41 / (np.log(90/z0))
+        kInf = np.sqrt(k0**2 + 1.7 * 0.47 / (5 + delta**(-1/2))**2)
+        # kInf = 3*k0
+
+        # k = k0 * (1 + (kInf/k0 - 1) * np.tanh((len(layout_x) - 2) / (N0/2)))
+
+        k = 0.05
+
+        # if TI <= 0.09:
+        #     k0 = 0.05
+        # else:
+        #     k0 = 0.075
+        # k = k0 * (1 + 2 * np.tanh((len(layout_x) - 2) / 50))
+
+        # Initialize FLOWERS interface
         self.flowers = fi.Flowers(
             self.wind_rose,
             self.layout_x,
