@@ -71,6 +71,68 @@ def random_layout(boundaries=[], n_turb=0, D=126.0, min_dist=2.0, idx=None):
 
     return xx, yy
 
+def discrete_layout(n_turb=0, D=126.0, min_dist=3.0, idx=None, spacing=False):
+    """
+    Generate a random wind farm layout within the specified boundaries.
+    Minimum spacing between turbines is 2D.
+
+    Args:
+        boundaries (list(tuple)): boundary vertices in the form
+            [(x0,y0), (x1,y1), ... , (xN,yN)]
+        n_turb (int): number of turbines
+        D (float): rotor diameter [m]
+        min_dist (float): enforced minimum spacing between turbine centers
+            normalized by rotor diameter
+        idx (int, optional): random number generator seed
+    
+    Args:
+        xx (np.array): x-positions of each turbine
+        yy (np.array): y-positions of each turbine
+
+    """
+
+    print("Generating wind farm layout.")
+    
+    if n_turb <= 0:
+        raise ValueError("Must supply number of turbines.")
+
+    # Initialize RNG and containers
+    # if idx != None:
+    #     np.random.seed(idx)
+
+    xx = np.zeros(n_turb)
+    yy = np.zeros(n_turb)
+
+    # Indices of discrete grid
+    s = n_turb + 1
+    x_idx = np.random.randint(0,s,n_turb)
+    y_idx = np.random.randint(0,s,n_turb)
+    pts = [(x_idx[i],y_idx[i]) for i in range(n_turb)]
+    while len(np.unique(pts)) < len(pts):
+        tmp = np.unique(pts)
+        new_set = []
+        for i in range(n_turb):
+            if i not in tmp:
+                new_set.append(i)
+        x_idx[new_set] = np.random.randint(0,s,len(new_set))
+        y_idx[new_set] = np.random.randint(0,s,len(new_set))
+        pts = [(x_idx[i],y_idx[i]) for i in range(n_turb)]
+
+    # Check that all combinations of x,y are unique
+
+    xx = np.array(min_dist*D * x_idx)
+    yy = np.array(min_dist*D * y_idx)
+
+    if spacing:
+        x_rel = (xx - np.reshape(xx,(-1,1)))/D
+        y_rel = (yy - np.reshape(yy,(-1,1)))/D
+        r_rel = np.sqrt(x_rel**2 + y_rel**2)
+        r_rel = np.ma.masked_where(np.eye(len(xx)),r_rel)
+        ss = np.mean(np.min(r_rel,-1))
+        return xx, yy, ss
+    else:
+        return xx, yy
+
 def load_layout(name, boundaries=False):
     """
     TODO: fill in description
@@ -309,7 +371,59 @@ def resample_wind_direction(df, wd=np.arange(0, 360, 5.0)):
 
     return df
 
-def resample_average_ws_by_wd(df):
+def resample_wind_speed(df, ws=np.arange(0, 26, 1.0)):
+    """
+    Resample wind speed bins using new specified bin center values.
+    (Copied from FLORIS)
+
+    Args:
+        df (pandas.DataFrame): Wind rose DataFrame containing the following
+            columns:
+            - 'wd': Wind direction bin center values (deg).
+            - 'ws': Wind speed bin center values (m/s).
+            - 'freq_val': The frequency of occurance of the
+                wind conditions in the other columns.
+
+        ws (np.array, optional): List of new wind direction center bins
+            (m/s). Defaults to np.arange(0, 26, 1.0).
+
+    Returns:
+        New wind rose DataFrame containing the following columns:
+            - 'wd': New wind direction bin center values from wd argument (deg).
+            - 'ws': Resampled wind speed bin center values (m/s).
+            - 'freq_val': The resampled frequency of occurance of the
+                wind conditions in the other columns.
+    """
+    # Make a copy of incoming dataframe
+    df = df.copy(deep=True)
+
+    # Get the wind step
+    ws_step = ws[1] - ws[0]
+
+    # Ws
+    ws_edges = ws - ws_step / 2.0
+    ws_edges = np.append(ws_edges, np.array(ws[-1] + ws_step / 2.0))
+
+    # Cut wind speed onto bins
+    df["ws"] = pd.cut(df.ws, ws_edges, labels=ws)
+
+    # Regroup
+    df = df.groupby([c for c in df.columns if c != "freq_val"]).sum()
+
+    # Fill nans
+    df = df.fillna(0)
+
+    # Reset the index
+    df = df.reset_index()
+
+    # Set to float
+    for c in [c for c in df.columns if c != "freq_val"]:
+        df[c] = df[c].astype(float)
+        df[c] = df[c].astype(float)
+
+    return df
+
+def resample_average_ws_by_wd(df, adjust=False):
         """
         Calculate the mean wind speed for each wind direction bin
         and resample the wind rose. (Copied from FLORIS)
@@ -335,13 +449,19 @@ def resample_average_ws_by_wd(df):
 
         ws_avg = []
 
-        for val in df.wd.unique():
-            ws_avg.append(
-                np.array(
-                    df.loc[df["wd"] == val]["ws"] * df.loc[df["wd"] == val]["freq_val"]
-                ).sum()
-                / df.loc[df["wd"] == val]["freq_val"].sum()
-            )
+        if adjust:
+            for val in df.wd.unique():
+                tmp = np.array(df.loc[df["wd"] == val]["ws"])
+                tmp2 = np.array(df.loc[df["wd"] == val]["freq_val"]/df.loc[df["wd"] == val]["freq_val"].sum())
+                ws_avg.append(np.sum(tmp**3 * tmp2)**(1/3))
+        else:
+            for val in df.wd.unique():
+                ws_avg.append(
+                    np.array(
+                        df.loc[df["wd"] == val]["ws"] * df.loc[df["wd"] == val]["freq_val"]
+                    ).sum()
+                    / df.loc[df["wd"] == val]["freq_val"].sum()
+                )
 
         # Regroup
         df = df.groupby("wd").sum()

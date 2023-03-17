@@ -65,9 +65,8 @@ class Flowers():
         wr["ws"] /= self.U
 
         # Look up thrust and power coefficients for each wind direction bin
-        # TODO: remove constant Ct and Cp
-        ct = tl.ct_lookup(wr.ws,ct=0.75)
-        cp = tl.cp_lookup(wr.ws,cp=0.43)
+        ct = tl.ct_lookup(wr.ws)
+        cp = tl.cp_lookup(wr.ws)
 
         # Average freestream term
         c = np.sum(cp**(1/3) * wr.ws * wr.freq_val)

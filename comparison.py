@@ -33,12 +33,12 @@ time_floris = []
 if case == 0:
     N_max = 50
     file = 'solutions/bench' + str(case) + '.p'
-    wind_rose = tl.load_wind_rose(12)
+    wind_rose = tl.load_wind_rose(0)
     TI = 0.06
     for idx in [1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,22,24,28,32,36,40,44,48,52,56,60]: #
         layout_x = np.linspace(0., (idx-1)*7*D, idx)
         layout_y = np.zeros(idx)
-        geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='jensen', z0=1e-3)
+        geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='turbopark', z0=1e-3)
         aep, time = geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg, display=False, iter=1)
 
         var.append(idx)
@@ -50,7 +50,7 @@ if case == 0:
 if case == 1:
     N_max = 12
     file = 'solutions/bench' + str(case) + '.p'
-    wind_rose = tl.load_wind_rose(7)
+    wind_rose = tl.load_wind_rose(1)
     TI = 0.12
     for idx in np.arange(1,N_max+1):
         xx = np.linspace(0., (idx-1)*7*D, idx)
@@ -58,7 +58,7 @@ if case == 1:
         layout_x = layout_x.flatten()
         layout_y = layout_y.flatten()
 
-        geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='jensen', z0=1e-3)
+        geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='turbopark', z0=1e-3)
         aep, time = geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg, display=False)
 
         var.append(idx**2)
@@ -216,12 +216,12 @@ if case == 9:
 if case == 10:
     N = 10
     file = 'solutions/bench' + str(case) + '.p'
-    wind_rose = tl.load_wind_rose(12)
+    wind_rose = tl.load_wind_rose(1)
     TI = 0.06
     for idx in [1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40]: #1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40
         layout_x = np.linspace(0., (idx-1)*7.*D, idx)
         layout_x = np.repeat(layout_x,2)
-        layout_y = np.array([0.0, 7.*D])
+        layout_y = np.array([0.0, 3.*D])
         layout_y = np.tile(layout_y,idx)
         geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='jensen', z0=1e-3)
         aep, time = geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg, display=False)

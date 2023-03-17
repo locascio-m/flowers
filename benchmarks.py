@@ -35,7 +35,7 @@ titles = [
     'Case 10: Adding Rows, Two Columns, 7D Spacing'
 ]
 
-for case in [0,3,7,8,9,10]:
+for case in [0]:
 
     file_name = 'solutions/bench' + str(case) + '.p'
 

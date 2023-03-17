@@ -41,7 +41,7 @@ class ModelComparison:
 
     """
 
-    def __init__(self, wind_rose, layout_x, layout_y, model="jensen", z0=1e-3):
+    def __init__(self, wind_rose, layout_x, layout_y, model="park", z0=1e-3):
 
         self.wind_rose = wind_rose
         self.layout_x = layout_x
@@ -54,10 +54,14 @@ class ModelComparison:
         self.opt_flowers = False
 
         # Initialize FLORIS from input file
-        if model == "jensen":
-            input_file = "./input/jensen.yaml"
+        if model == "park":
+            input_file = "./input/park.yaml"
+        elif model == "turbopark":
+            input_file = "./input/turbopark.yaml"
         elif model == "gauss":
             input_file = "./input/gauss.yaml"
+        else:
+            raise ValueError("Conventional model not supported.")
         self.floris = wfct.floris_interface.FlorisInterface(input_file)
         TI = 1 / np.log(90/z0)
 
@@ -178,7 +182,7 @@ class ModelComparison:
         
         return self.floris
 
-    def resample_floris(self, ws_avg=False, wd_resolution=1.0):
+    def resample_floris(self, ws_avg=False, wd_resolution=1.0, ws_resolution=1.0):
         """
         Reinitialize FLORIS interface with resampled wind rose.
         Returns the FLORIS interface.
@@ -199,6 +203,11 @@ class ModelComparison:
                 wr, 
                 wd=np.arange(0, 360, wd_resolution)
                 )
+        if ws_resolution > 1.0:
+            wr = tl.resample_wind_speed(
+                wr, 
+                ws=np.arange(0, 26.0, ws_resolution)
+                )
 
         # Resample wind rose by average wind speed per wind direction
         if ws_avg:
@@ -214,10 +223,11 @@ class ModelComparison:
                 )
 
         else:
-            wd_array = np.array(self.wind_rose["wd"].unique(), dtype=float)
-            ws_array = np.array(self.wind_rose["ws"].unique(), dtype=float)  
+            wd_array = np.array(wr["wd"].unique(), dtype=float)
+            ws_array = np.array(wr["ws"].unique(), dtype=float)  
+
             wd_grid, ws_grid = np.meshgrid(wd_array, ws_array, indexing="ij")
-            freq_interp = NearestNDInterpolator(self.wind_rose[["wd", "ws"]], self.wind_rose["freq_val"])
+            freq_interp = NearestNDInterpolator(wr[["wd", "ws"]], wr["freq_val"])
             freq = freq_interp(wd_grid, ws_grid)
             self.freq_floris = freq / np.sum(freq)
             self.bins_floris = len(wd_array)
@@ -274,7 +284,7 @@ class ModelComparison:
             aep = self.flowers.calculate_aep()
             return aep
     
-    def compute_floris_aep(self, ws_avg=False, wd_resolution=1.0, timer=False):
+    def compute_floris_aep(self, ws_avg=False, wd_resolution=1.0, ws_resolution=1.0, timer=False):
         """
         Compute farm AEP using the FLORIS model.
 
@@ -296,8 +306,8 @@ class ModelComparison:
         self.reinitialize_floris()
 
         # Resample the FLORIS interface
-        if wd_resolution > 1.0 or ws_avg:
-            self.resample_floris(ws_avg=ws_avg, wd_resolution=wd_resolution)
+        if wd_resolution > 1.0 or ws_resolution > 1.0 or ws_avg:
+            self.resample_floris(ws_avg=ws_avg, wd_resolution=wd_resolution, ws_resolution=ws_resolution)
 
         # Time AEP calculation
         if timer:
@@ -310,7 +320,7 @@ class ModelComparison:
                 aep = np.sum(self.floris.get_farm_power() * self.freq_floris * 8760)
 
             else:
-                aep = self.floris.get_farm_AEP(freq=self.freq_floris)
+                aep = np.sum(self.floris.get_farm_power() * self.freq_floris * 8760)
             elapsed = time.time() - t
 
             return aep, elapsed
@@ -326,7 +336,7 @@ class ModelComparison:
             aep = self.floris.get_farm_AEP(freq=self.freq_floris)
             return aep
 
-    def compare_aep(self, iter=5, num_terms=None, ws_avg=False, wd_resolution=1.0, display=True):
+    def compare_aep(self, iter=5, num_terms=None, ws_avg=False, wd_resolution=1.0, ws_resolution=1.0, display=True):
         """
         Compute farm AEP using both models and compare. The calculation is
             repeated an optional number of instances to average computation time.
@@ -358,7 +368,7 @@ class ModelComparison:
             aep_flowers[n] = tmp[0]
             time_flowers[n] = tmp[1]
 
-            tmp = self.compute_floris_aep(wd_resolution=wd_resolution, timer=True, ws_avg=ws_avg)
+            tmp = self.compute_floris_aep(wd_resolution=wd_resolution, ws_resolution=ws_resolution, timer=True, ws_avg=ws_avg)
             aep_floris[n] = tmp[0]
             time_floris[n] = tmp[1]
         
