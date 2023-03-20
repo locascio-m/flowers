@@ -154,8 +154,11 @@ aep_flow = np.array(aep_flowers) / 1e9
 aep_flor = np.array(aep_floris) / 1e9
 
 for i in range(9):
-    ax.scatter(aep_flor[:,i],aep_flor[:,i],marker=markers[i],label='WR ' + str(i+1))
-ax.set(xlabel='FLORIS AEP [GWh]',ylabel='FLOWERS AEP [GWh]',title='Error with Number of Turbines')
+    ax.scatter(aep_flor[:,i],aep_flow[:,i],marker=markers[i],label='WR ' + str(i+1))
+xlim = ax.get_xlim()
+ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
+ax.legend()
+ax.set(xlabel='FLORIS AEP [GWh]',ylabel='FLOWERS AEP [GWh]',title='Case 4: Low Resolution Error with Number of Turbines')
 
 # for case in [0]:
 

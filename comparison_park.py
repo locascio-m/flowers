@@ -88,8 +88,8 @@ if case == 1:
             wind_rose = tl.load_wind_rose(wr_list[wr_idx])
             geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='park')
             aep, tmp = geo.compare_aep(num_terms=-1, wd_resolution=1.0, ws_avg=True, display=False)
-            time_flowers[idx-1,wr_idx-1] = tmp[0]
-            time_floris[idx-1,wr_idx-1] = tmp[1]
+            time_flowers[idx-1,wr_idx] = tmp[0]
+            time_floris[idx-1,wr_idx] = tmp[1]
 
         var.append(idx**2)
         aep_flowers.append(aep[0])
@@ -141,7 +141,7 @@ if case == 3:
 
 # Error as a function of number of turbines
 if case == 4:
-    N_max = 12
+    N_max = 2
     file = 'solutions/park' + str(case) + '.p'
     wr_list = [1,2,3,4,5,6,7,8,9]
     aep_flowers = np.zeros((N_max,len(wr_list)))
@@ -156,9 +156,9 @@ if case == 4:
         for wr_idx in range(len(wr_list)):
             wind_rose = tl.load_wind_rose(wr_list[wr_idx])
             geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='park')
-            aep, tmp = geo.compare_aep(num_terms=-1, wd_resolution=1.0, ws_avg=True, display=False)
-            aep_flowers[idx-1,wr_idx-1] = aep[0]
-            aep_floris[idx-1,wr_idx-1] = aep[1]
+            aep, tmp = geo.compare_aep(num_terms=5, wd_resolution=5.0, ws_avg=True, display=False)
+            aep_flowers[idx-1,wr_idx] = aep[0]
+            aep_floris[idx-1,wr_idx] = aep[1]
 
         var.append(idx**2)
         time_flowers.append(tmp[0])
