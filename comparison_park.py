@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore")
 D = 126.0
 num_terms = -1
 wd_resolution = 1.0
-case = 0
+case = 4
 
 # Run sweep
 var = []
@@ -36,10 +36,10 @@ if case == 0:
     layout_x, layout_y = np.meshgrid(xx,xx)
     layout_x = layout_x.flatten()
     layout_y = layout_y.flatten()
-    wr_list = [1,2,6]
+    wr_list = [1,2,6,9]
     WD_list = [360,180,120,90,72,45,40,36,30,24,20,18,15,12,10,9,8,5,4]
     wd_res_list = 360 / np.array(WD_list)
-    WS_list = [26,21,17,13,10,7,5,4,3]
+    WS_list = [26,20,15,10,7,5,4,3]
     ws_res_list = 26. / np.array(WS_list)
     N_list = [180,160,140,120,100,80,60,50,40,30,25,20,18,16,14,12,10,9,8,7,6,5,4,3,2]
 
@@ -74,7 +74,7 @@ if case == 0:
 if case == 1:
     N_max = 12
     file = 'solutions/park' + str(case) + '.p'
-    wr_list = [1,2,6]
+    wr_list = [1,2,3,4,5,6,7,8,9]
     time_flowers = np.zeros((N_max,len(wr_list)))
     time_floris = np.zeros((N_max,len(wr_list)))
     for idx in np.arange(1,N_max+1):
@@ -138,5 +138,30 @@ if case == 3:
         time_flowers.append(time[0])
         time_floris.append(time[1])
     var = (spacing, N_wr, N_turb)
+
+# Error as a function of number of turbines
+if case == 4:
+    N_max = 12
+    file = 'solutions/park' + str(case) + '.p'
+    wr_list = [1,2,3,4,5,6,7,8,9]
+    aep_flowers = np.zeros((N_max,len(wr_list)))
+    aep_floris = np.zeros((N_max,len(wr_list)))
+    for idx in np.arange(1,N_max+1):
+        print('{:.0f} Array'.format(idx))
+        xx = np.linspace(0., (idx-1)*7*D, idx)
+        layout_x, layout_y = np.meshgrid(xx,xx)
+        layout_x = layout_x.flatten()
+        layout_y = layout_y.flatten()
+
+        for wr_idx in range(len(wr_list)):
+            wind_rose = tl.load_wind_rose(wr_list[wr_idx])
+            geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='park')
+            aep, tmp = geo.compare_aep(num_terms=-1, wd_resolution=1.0, ws_avg=True, display=False)
+            aep_flowers[idx-1,wr_idx-1] = aep[0]
+            aep_floris[idx-1,wr_idx-1] = aep[1]
+
+        var.append(idx**2)
+        time_flowers.append(tmp[0])
+        time_floris.append(tmp[1])
 
 pickle.dump((var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose), open(file,'wb'))
