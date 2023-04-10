@@ -38,7 +38,7 @@ if case == 0:
     for idx in [1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,22,24,28,32,36,40,44,48,52,56,60]: #
         layout_x = np.linspace(0., (idx-1)*7*D, idx)
         layout_y = np.zeros(idx)
-        geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='turbopark', z0=1e-3)
+        geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='park', z0=1e-3)
         aep, time = geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg, display=False, iter=1)
 
         var.append(idx)
