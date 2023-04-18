@@ -75,6 +75,7 @@ ax1.set(xlabel='Number of Turbines',ylabel='Speed-Up Factor')
 fig.suptitle('Case 1: Cost Scaling with Number of Turbines')
 
 ## Case 2
+
 file_name = 'solutions/park' + str(2) + '.p'
 var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
 aep_error = [(aep_flowers[i] - aep_floris[i]) / aep_floris[i] * 100 for i in range(len(aep_flowers))]
@@ -86,17 +87,36 @@ spacing = var[0]
 wr = var[1]
 
 fig, ax = plt.subplots(1,1,figsize=(11,7))
-im = ax.scatter(aep_flor,aep_flow,c=wr)
-plt.colorbar(im,ax=ax,label='Wind Rose Index')
-xlim = plt.gca().get_xlim()
-ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
-ax.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
-ax.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
+markers = ['o','v','^','s','P','*','X','D','p']
+for i in range(9):
+    p, cov = np.ma.polyfit(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),1,cov=True)
+    xrange = np.array([0,np.max(np.ma.masked_where(wr!=i+1,aep_flor))])
+    yrange = p[0]*xrange + p[1]
+    # im = ax.scatter(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),c=wr_val[i]*np.ma.masked_where(wr!=i+1,np.ones(200)),marker=markers[i],vmin=40000.,vmax=82000.,label='WR ' + str(i+1))
+    im = ax.scatter(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),marker=markers[i],label='WR ' + str(i+1))
+    ax.plot(xrange,yrange,'--')
+# plt.colorbar(im,ax=ax,label='Wind Rose Frequency Standard Deviation')
+# xlim = plt.gca().get_xlim()
+# ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
+# ax.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
+# ax.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
 ax.set(xlabel='FLORIS AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
 ax.legend()
 fig.suptitle('Case 2: Full Resolution AEP Discrepancy Across Randomized Cases')
 
 ## Case 3
+freq_std = np.zeros(9)
+ws_avg = np.zeros(9)
+wr_val = np.zeros(9)
+for i in range(9):
+    wr = tl.load_wind_rose(i+1)
+    freq_std[i] = np.std(wr.freq_val)
+    ws_avg[i] = np.sum(wr.freq_val*wr.ws)
+    wr_val[i] = ws_avg[i] / (freq_std[i]*360*26)
+    # wr = tl.resample_average_ws_by_wd(wr)
+    # ws_std[i] = np.mean(wr.ws)
+
+print(wr_val)
 file_name = 'solutions/park' + str(3) + '.p'
 var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
 
@@ -108,8 +128,10 @@ wr = var[1]
 n_turb = var[2]
 
 fig, (ax0,ax1) = plt.subplots(1,2,figsize=(12,5))
-im = ax0.scatter(aep_flor,aep_flow,c=wr)
-plt.colorbar(im,ax=ax0,label='Wind Rose Index')
+
+for i in range(9):
+    im = ax0.scatter(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),c=wr_val[i]*np.ma.masked_where(wr!=i+1,np.ones(200)),marker=markers[i],vmin=3.,vmax=9.)
+plt.colorbar(im,ax=ax0,label='mean(U)/std(f)')
 xlim = ax0.get_xlim()
 ax0.plot([0, xlim[1]], [0, xlim[1]], 'k--')
 ax0.plot([0, xlim[1]], [0, 0.85*xlim[1]], 'k--')
