@@ -20,8 +20,8 @@ warnings.filterwarnings("ignore")
 D = 126.0
 num_terms = -1
 wd_resolution = 1.0
-ws_avg = True
-case = 0
+ws_avg = False
+case = 1
 
 # Run sweep
 var = []
@@ -48,7 +48,7 @@ if case == 0:
         time_floris.append(time[1])
 
 if case == 1:
-    N_max = 12
+    N_max = 10
     file = 'solutions/bench' + str(case) + '.p'
     wind_rose = tl.load_wind_rose(1)
     TI = 0.12
@@ -58,7 +58,7 @@ if case == 1:
         layout_x = layout_x.flatten()
         layout_y = layout_y.flatten()
 
-        geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='turbopark', z0=1e-3)
+        geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='turbopark')
         aep, time = geo.compare_aep(num_terms=num_terms, wd_resolution=wd_resolution, ws_avg=ws_avg, display=False)
 
         var.append(idx**2)

@@ -41,7 +41,7 @@ class ModelComparison:
 
     """
 
-    def __init__(self, wind_rose, layout_x, layout_y, model="park", z0=1e-3):
+    def __init__(self, wind_rose, layout_x, layout_y, model="park", terrain="offshore"):
 
         self.wind_rose = wind_rose
         self.layout_x = layout_x
@@ -63,12 +63,11 @@ class ModelComparison:
         else:
             raise ValueError("Conventional model not supported.")
         self.floris = wfct.floris_interface.FlorisInterface(input_file)
-        TI = 1 / np.log(90/z0)
 
         self.floris.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
             wind_shear=0,
-            turbulence_intensity=TI)
+            turbulence_intensity=0.07)
         
         # Initialize wind direction-speed frequency array for AEP
         wd_array = np.array(self.wind_rose["wd"].unique(), dtype=float)
@@ -89,7 +88,7 @@ class ModelComparison:
         self.post.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
             wind_shear=0,
-            turbulence_intensity=TI)
+            turbulence_intensity=0.07)
         self.post_freq = self.freq_floris
 
         self.post.reinitialize(
@@ -101,22 +100,29 @@ class ModelComparison:
         # TODO: import wake expansion rate from FLORIS
         self.diameter = self.floris.floris.farm.rotor_diameters[0][0][0]
 
+        if terrain == "offshore":
+            k = 0.05
+        elif terrain == "onshore":
+            k = 0.075
+        else:
+            raise ValueError("Terrain argument must be onshore or offshore.")
+
         # Calibrate FLOWERS parameter
-        N0 = 100
+        # N0 = 100
 
-        # x_length = np.max(layout_x) - np.min(layout_x)
-        # y_length = np.max(layout_y) - np.min(layout_y)
-        # A = x_length*y_length
-        # delta = len(layout_x) * np.pi * self.diameter**2 / (4 * A)
-        delta = 0.8/49
+        # # x_length = np.max(layout_x) - np.min(layout_x)
+        # # y_length = np.max(layout_y) - np.min(layout_y)
+        # # A = x_length*y_length
+        # # delta = len(layout_x) * np.pi * self.diameter**2 / (4 * A)
+        # delta = 0.8/49
 
-        k0 = 1.7 * 0.41 / (np.log(90/z0))
-        kInf = np.sqrt(k0**2 + 1.7 * 0.47 / (5 + delta**(-1/2))**2)
-        # kInf = 3*k0
+        # k0 = 1.7 * 0.41 / (np.log(90/z0))
+        # kInf = np.sqrt(k0**2 + 1.7 * 0.47 / (5 + delta**(-1/2))**2)
+        # # kInf = 3*k0
 
-        # k = k0 * (1 + (kInf/k0 - 1) * np.tanh((len(layout_x) - 2) / (N0/2)))
+        # # k = k0 * (1 + (kInf/k0 - 1) * np.tanh((len(layout_x) - 2) / (N0/2)))
 
-        k = 0.05
+        # k = 0.05
 
         # if TI <= 0.09:
         #     k0 = 0.05
