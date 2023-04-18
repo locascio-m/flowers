@@ -68,7 +68,7 @@ class ModelComparison:
         self.floris.reinitialize(
             layout=(layout_x.flatten(),layout_y.flatten()), 
             wind_shear=0,
-            turbulence_intensity=TI)
+            turbulence_intensity=0.06)
         
         # Initialize wind direction-speed frequency array for AEP
         wd_array = np.array(self.wind_rose["wd"].unique(), dtype=float)
