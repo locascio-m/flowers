@@ -100,9 +100,9 @@ for i in range(9):
 # ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
 # ax.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
 # ax.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
-ax.set(xlabel='FLORIS AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
+ax.set(xlabel='Conventional AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
 ax.legend()
-fig.suptitle('Case 2: Full Resolution AEP Discrepancy Across Randomized Cases')
+# fig.suptitle('Case 2: Full Resolution AEP Discrepancy Across Randomized Cases')
 
 ## Case 3
 freq_std = np.zeros(9)
@@ -116,7 +116,6 @@ for i in range(9):
     # wr = tl.resample_average_ws_by_wd(wr)
     # ws_std[i] = np.mean(wr.ws)
 
-print(wr_val)
 file_name = 'solutions/park' + str(3) + '.p'
 var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
 
@@ -131,22 +130,22 @@ fig, (ax0,ax1) = plt.subplots(1,2,figsize=(12,5))
 
 for i in range(9):
     im = ax0.scatter(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),c=wr_val[i]*np.ma.masked_where(wr!=i+1,np.ones(200)),marker=markers[i],vmin=3.,vmax=9.)
-plt.colorbar(im,ax=ax0,label='mean(U)/std(f)')
+plt.colorbar(im,ax=ax0,label='mean($U_\infty$) / std($f_{u_\infty,\phi}$)')
 xlim = ax0.get_xlim()
 ax0.plot([0, xlim[1]], [0, xlim[1]], 'k--')
-ax0.plot([0, xlim[1]], [0, 0.85*xlim[1]], 'k--')
-ax0.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.85*xlim[1]],alpha=0.2,label='[0%,-15%] Error',color='k')
+ax0.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
+ax0.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
 ax0.legend()
-ax0.set(xlabel='FLORIS AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
+ax0.set(xlabel='Conventional AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
 im = ax1.scatter(time_floris,time_flowers,c=n_turb,cmap='plasma')
 plt.colorbar(im,ax=ax1,label='Number of Turbines')
 xlim = ax1.get_xlim()
 ax1.loglog([10*xlim[0], 10*xlim[1]], xlim, 'k--')
 ax1.loglog([50*xlim[0], 50*xlim[1]], xlim, 'k--')
 ax1.fill_betweenx(xlim,[10*xlim[0], 10*xlim[1]],[50*xlim[0], 50*xlim[1]],alpha=0.2,label='10x-50x Speed',color='k')
-ax1.set(xlabel='FLORIS Time [s]',ylabel='FLOWERS Time [s]')
+ax1.set(xlabel='Conventional Time [s]',ylabel='FLOWERS Time [s]')
 ax1.legend()
-fig.suptitle('Case 3: Low Resolution AEP Discrepancy Across Randomized Cases')
+# fig.suptitle('Case 3: Low Resolution AEP Discrepancy Across Randomized Cases')
 
 # for case in [0]:
 
