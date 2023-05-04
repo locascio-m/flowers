@@ -97,7 +97,7 @@ if case == 1:
 
 # Randomized number of turbines, layout, and wind rose
 if case == 2:
-    N_max = 20
+    N_max = 200
     file = 'solutions/park' + str(case) + '.p'    
     N_turb = np.random.randint(2,101,N_max)
     N_wr = np.random.randint(1,10,N_max)
