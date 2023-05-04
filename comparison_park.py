@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore")
 D = 126.0
 num_terms = -1
 wd_resolution = 1.0
-case = 4
+case = 2
 
 # Run sweep
 var = []
@@ -97,25 +97,52 @@ if case == 1:
 
 # Randomized number of turbines, layout, and wind rose
 if case == 2:
-    N_max = 200
+    N_max = 20
     file = 'solutions/park' + str(case) + '.p'    
     N_turb = np.random.randint(2,101,N_max)
     N_wr = np.random.randint(1,10,N_max)
-    spacing = []
+
+    aep_flowers_full = []
+    aep_flowers_fast = []
+    aep_park_full = []
+    aep_park_fast = []
+    time_flowers_full = []
+    time_flowers_fast = []
+    time_park_full = []
+    time_park_fast = []
 
     for idx in range(N_max):
         wind_rose = tl.load_wind_rose(N_wr[idx])
-        layout_x, layout_y, ss = tl.discrete_layout(n_turb=N_turb[idx], D=D, min_dist=3.0, spacing=True)
+        layout_x, layout_y = tl.discrete_layout(n_turb=N_turb[idx], D=D, min_dist=3.0)
 
         geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='park')
-        aep, time = geo.compare_aep(num_terms=-1, wd_resolution=1.0, ws_avg=False, display=False, iter=1)
 
-        spacing.append(ss)
-        aep_flowers.append(aep[0])
-        aep_floris.append(aep[1])
-        time_flowers.append(time[0])
-        time_floris.append(time[1])
-    var = (spacing, N_wr)
+        aep, time = geo.compare_aep(num_terms=-1, wd_resolution=1.0, ws_avg=False, display=False)
+        aep_flowers_full.append(aep[0])
+        aep_park_full.append(aep[1])
+        time_flowers_full.append(time[0])
+        time_park_full.append(time[1])
+
+        aep, time = geo.compare_aep(num_terms=5, wd_resolution=5.0, ws_avg=True, display=False)
+        aep_flowers_fast.append(aep[0])
+        aep_park_fast.append(aep[1])
+        time_flowers_fast.append(time[0])
+        time_park_fast.append(time[1])
+
+    var = (N_wr, N_turb)
+
+    pickle.dump((
+        var, 
+        aep_flowers_full, 
+        aep_flowers_fast, 
+        aep_park_full, 
+        aep_park_fast, 
+        time_flowers_full, 
+        time_flowers_fast, 
+        time_park_full, 
+        time_park_fast
+        ), 
+        open(file,'wb'))
 
 # Randomized number of turbines, layout, and wind rose (low resolution)
 if case == 3:
@@ -164,4 +191,4 @@ if case == 4:
         time_flowers.append(tmp[0])
         time_floris.append(tmp[1])
 
-pickle.dump((var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose), open(file,'wb'))
+# pickle.dump((var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose), open(file,'wb'))

@@ -58,93 +58,113 @@ plt.colorbar(im,ax=ax6,label='Normalized AEP')
 ax6.set(xlabel='Number of Wind Directions', ylabel='Number of Wind Speeds')
 fig.suptitle('Case 0: Wind Rose Resolution')
 
-# Case 1
-file_name = 'solutions/park' + str(1) + '.p'
-var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
+# # Case 1
+# file_name = 'solutions/park' + str(1) + '.p'
+# var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
 
-fig, (ax0,ax1) = plt.subplots(1,2,figsize=(11,4))
-time_factor = np.zeros_like(time_floris)
-for i in range(3):
-    time_factor[:,i] = time_floris[:,i] / time_flowers[:,i]
-ax0.errorbar(var,np.mean(time_flowers,1),np.std(time_flowers,1),marker='o',ms=3)
-ax0.errorbar(var,np.mean(time_floris,1),np.std(time_floris,1),marker='o',ms=3)
-ax0.set(xlabel='Number of Turbines',ylabel='Computation Time [s]')
-ax0.legend(['FLOWERS','Conventional-Park'])
-ax1.errorbar(var,np.mean(time_factor,1),np.std(time_factor,1),marker='o',ms=3,color='green')
-ax1.set(xlabel='Number of Turbines',ylabel='Speed-Up Factor')
-fig.suptitle('Case 1: Cost Scaling with Number of Turbines')
+# fig, (ax0,ax1) = plt.subplots(1,2,figsize=(11,4))
+# time_factor = np.zeros_like(time_floris)
+# for i in range(3):
+#     time_factor[:,i] = time_floris[:,i] / time_flowers[:,i]
+# ax0.errorbar(var,np.mean(time_flowers,1),np.std(time_flowers,1),marker='o',ms=3)
+# ax0.errorbar(var,np.mean(time_floris,1),np.std(time_floris,1),marker='o',ms=3)
+# ax0.set(xlabel='Number of Turbines',ylabel='Computation Time [s]')
+# ax0.legend(['FLOWERS','Conventional-Park'])
+# ax1.errorbar(var,np.mean(time_factor,1),np.std(time_factor,1),marker='o',ms=3,color='green')
+# ax1.set(xlabel='Number of Turbines',ylabel='Speed-Up Factor')
+# fig.suptitle('Case 1: Cost Scaling with Number of Turbines')
 
 ## Case 2
 
 file_name = 'solutions/park' + str(2) + '.p'
-var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
-aep_error = [(aep_flowers[i] - aep_floris[i]) / aep_floris[i] * 100 for i in range(len(aep_flowers))]
+var, aep_flowers_full, aep_flowers_fast, aep_park_full, aep_park_fast, time_flowers_full, time_flowers_fast, time_park_full, time_park_fast = pickle.load(open(file_name,'rb'))
 
-aep_flow = [aep_flowers[i] / 1e9 for i in range(len(aep_flowers))]
-aep_flor = [aep_floris[i] / 1e9 for i in range(len(aep_flowers))]
+# aep_error = [(aep_flowers[i] - aep_floris[i]) / aep_floris[i] * 100 for i in range(len(aep_flowers))]
 
-spacing = var[0]
-wr = var[1]
+aep_flowers_full = np.array(aep_flowers_full) / 1e9
+aep_flowers_fast = np.array(aep_flowers_fast) / 1e9
+aep_park_full = np.array(aep_park_full) / 1e9
+aep_park_fast = np.array(aep_park_fast) / 1e9
+
+wr = var[0]
+nt = var[1]
 
 fig, ax = plt.subplots(1,1,figsize=(11,7))
 markers = ['o','v','^','s','P','*','X','D','p']
 for i in range(9):
-    p, cov = np.ma.polyfit(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),1,cov=True)
-    xrange = np.array([0,np.max(np.ma.masked_where(wr!=i+1,aep_flor))])
-    yrange = p[0]*xrange + p[1]
-    # im = ax.scatter(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),c=wr_val[i]*np.ma.masked_where(wr!=i+1,np.ones(200)),marker=markers[i],vmin=40000.,vmax=82000.,label='WR ' + str(i+1))
-    im = ax.scatter(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),marker=markers[i],label='WR ' + str(i+1))
-    ax.plot(xrange,yrange,'--')
-# plt.colorbar(im,ax=ax,label='Wind Rose Frequency Standard Deviation')
-# xlim = plt.gca().get_xlim()
-# ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
-# ax.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
-# ax.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
+    # p, _ = np.ma.polyfit(np.ma.masked_where(wr!=i+1,aep_park_full),np.ma.masked_where(wr!=i+1,aep_flowers_full),1,cov=True)
+    # xrange = np.array([0,np.max(np.ma.masked_where(wr!=i+1,aep_park_full))])
+    # yrange = p[0]*xrange + p[1]
+    im = ax.scatter(np.ma.masked_where(wr!=i+1,aep_park_full),np.ma.masked_where(wr!=i+1,aep_flowers_full),marker=markers[i],label='WR ' + str(i+1))
+    # ax.plot(xrange,yrange,'--')
+xlim = ax.get_xlim()
+ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
 ax.set(xlabel='Conventional AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
 ax.legend()
 # fig.suptitle('Case 2: Full Resolution AEP Discrepancy Across Randomized Cases')
 
-## Case 3
-freq_std = np.zeros(9)
-ws_avg = np.zeros(9)
-wr_val = np.zeros(9)
-for i in range(9):
-    wr = tl.load_wind_rose(i+1)
-    freq_std[i] = np.std(wr.freq_val)
-    ws_avg[i] = np.sum(wr.freq_val*wr.ws)
-    wr_val[i] = ws_avg[i] / (freq_std[i]*360*26)
-    # wr = tl.resample_average_ws_by_wd(wr)
-    # ws_std[i] = np.mean(wr.ws)
 
-file_name = 'solutions/park' + str(3) + '.p'
-var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
+fig, ax = plt.subplots(1,1,figsize=(11,7))
+ax.scatter(aep_park_full, aep_flowers_fast, label='FLOWERS')
+ax.scatter(aep_park_full, aep_park_fast, label='Conventional')
+xlim = ax.get_xlim()
+ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
+# ax.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
+# ax.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
+ax.legend()
+ax.set(xlabel='Conventional AEP: Full Resolution [GWh]',ylabel='Fast AEP Models [GWh]')
 
-aep_flow = [aep_flowers[i] / 1e9 for i in range(len(aep_flowers))]
-aep_flor = [aep_floris[i] / 1e9 for i in range(len(aep_flowers))]
+fig, ax = plt.subplots(1,1,figsize=(11,7))
+im = ax.scatter(time_park_fast,time_flowers_fast,c=nt,cmap='plasma')
+plt.colorbar(im,ax=ax,label='Number of Turbines')
+xlim = ax.get_xlim()
+ax.loglog([10*xlim[0], 10*xlim[1]], xlim, 'k--')
+ax.loglog([50*xlim[0], 50*xlim[1]], xlim, 'k--')
+ax.fill_betweenx(xlim,[10*xlim[0], 10*xlim[1]],[50*xlim[0], 50*xlim[1]],alpha=0.2,label='10x-50x Speed',color='k')
+ax.set(xlabel='Conventional Time [s]',ylabel='FLOWERS Time [s]', xlim=xlim)
+ax.legend()
 
-spacing = var[0]
-wr = var[1]
-n_turb = var[2]
+# ## Case 3
+# freq_std = np.zeros(9)
+# ws_avg = np.zeros(9)
+# wr_val = np.zeros(9)
+# for i in range(9):
+#     wr = tl.load_wind_rose(i+1)
+#     freq_std[i] = np.std(wr.freq_val)
+#     ws_avg[i] = np.sum(wr.freq_val*wr.ws)
+#     wr_val[i] = ws_avg[i] / (freq_std[i]*360*26)
+#     # wr = tl.resample_average_ws_by_wd(wr)
+#     # ws_std[i] = np.mean(wr.ws)
 
-fig, (ax0,ax1) = plt.subplots(1,2,figsize=(12,5))
+# file_name = 'solutions/park' + str(3) + '.p'
+# var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
 
-for i in range(9):
-    im = ax0.scatter(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),c=wr_val[i]*np.ma.masked_where(wr!=i+1,np.ones(200)),marker=markers[i],vmin=3.,vmax=9.)
-plt.colorbar(im,ax=ax0,label='mean($U_\infty$) / std($f_{u_\infty,\phi}$)')
-xlim = ax0.get_xlim()
-ax0.plot([0, xlim[1]], [0, xlim[1]], 'k--')
-ax0.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
-ax0.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
-ax0.legend()
-ax0.set(xlabel='Conventional AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
-im = ax1.scatter(time_floris,time_flowers,c=n_turb,cmap='plasma')
-plt.colorbar(im,ax=ax1,label='Number of Turbines')
-xlim = ax1.get_xlim()
-ax1.loglog([10*xlim[0], 10*xlim[1]], xlim, 'k--')
-ax1.loglog([50*xlim[0], 50*xlim[1]], xlim, 'k--')
-ax1.fill_betweenx(xlim,[10*xlim[0], 10*xlim[1]],[50*xlim[0], 50*xlim[1]],alpha=0.2,label='10x-50x Speed',color='k')
-ax1.set(xlabel='Conventional Time [s]',ylabel='FLOWERS Time [s]')
-ax1.legend()
+# aep_flow = [aep_flowers[i] / 1e9 for i in range(len(aep_flowers))]
+# aep_flor = [aep_floris[i] / 1e9 for i in range(len(aep_flowers))]
+
+# spacing = var[0]
+# wr = var[1]
+# n_turb = var[2]
+
+# fig, (ax0,ax1) = plt.subplots(1,2,figsize=(12,5))
+
+# for i in range(9):
+#     im = ax0.scatter(np.ma.masked_where(wr!=i+1,aep_flor),np.ma.masked_where(wr!=i+1,aep_flow),c=wr_val[i]*np.ma.masked_where(wr!=i+1,np.ones(200)),marker=markers[i],vmin=3.,vmax=9.)
+# plt.colorbar(im,ax=ax0,label='mean($U_\infty$) / std($f_{u_\infty,\phi}$)')
+# xlim = ax0.get_xlim()
+# ax0.plot([0, xlim[1]], [0, xlim[1]], 'k--')
+# ax0.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
+# ax0.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
+# ax0.legend()
+# ax0.set(xlabel='Conventional AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
+# im = ax1.scatter(time_floris,time_flowers,c=n_turb,cmap='plasma')
+# plt.colorbar(im,ax=ax1,label='Number of Turbines')
+# xlim = ax1.get_xlim()
+# ax1.loglog([10*xlim[0], 10*xlim[1]], xlim, 'k--')
+# ax1.loglog([50*xlim[0], 50*xlim[1]], xlim, 'k--')
+# ax1.fill_betweenx(xlim,[10*xlim[0], 10*xlim[1]],[50*xlim[0], 50*xlim[1]],alpha=0.2,label='10x-50x Speed',color='k')
+# ax1.set(xlabel='Conventional Time [s]',ylabel='FLOWERS Time [s]')
+# ax1.legend()
 # fig.suptitle('Case 3: Low Resolution AEP Discrepancy Across Randomized Cases')
 
 # for case in [0]:
