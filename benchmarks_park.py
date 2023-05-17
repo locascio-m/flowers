@@ -1,14 +1,65 @@
 import numpy as np
 import model as set
 import tools as tl
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+import matplotlib.colors as co
 import pickle
 import visualization as vis
 import warnings
 
+from scipy.optimize import curve_fit
+
 save = False
 
-## Case 0
+# ## Case 0
+# file_name = 'solutions/park' + str(0) + '.p'
+# var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
+
+# aep_flowers = np.array(aep_flowers) / aep_flowers[0,:]
+# aep_floris = np.array(aep_floris) / aep_floris[0,0,:]
+
+# time_flowers = np.array(time_flowers) / time_flowers[0]
+# time_floris = np.array(time_floris) / time_floris[0,0,:]
+
+# num_terms = var[0]
+# num_WD = var[1]
+# num_WS = var[2]
+
+# fig = plt.figure(figsize=(14,7))
+# ax1 = fig.add_subplot(231)
+# ax2 = fig.add_subplot(232, sharey=ax1)
+# ax3 = fig.add_subplot(233)
+# ax4 = fig.add_subplot(234, sharex=ax1)
+# ax5 = fig.add_subplot(235, sharex=ax2, sharey=ax4)
+# ax6 = fig.add_subplot(236)
+
+# ax1.plot(num_terms, np.mean(time_flowers,-1),'-o',markersize=3)
+# ax1.fill_between(num_terms, np.mean(time_flowers,-1)-np.std(time_flowers,-1),np.mean(time_flowers,-1)+np.std(time_flowers,-1),alpha=0.2)
+# ax1.set(xlabel='Number of Fourier Terms', ylabel='Normalized Time', title='FLOWERS')
+
+# ax2.plot(num_WD, np.mean(time_floris[:,-1],-1),'-o',markersize=3)
+# ax2.fill_between(num_WD, np.mean(time_floris[:,-1],-1)-np.std(time_floris[:,-1],-1),np.mean(time_floris[:,-1],-1)+np.std(time_floris[:,-1],-1),alpha=0.2)
+# ax2.set(xlabel='Number of Wind Directions', ylabel='Normalized Time', title='Conventional (Avg)')
+
+# ax4.plot(num_terms, np.mean(aep_flowers,-1),'-o',markersize=3)
+# ax4.fill_between(num_terms, np.mean(aep_flowers,-1)-np.std(aep_flowers,-1),np.mean(aep_flowers,-1)+np.std(aep_flowers,-1),alpha=0.2)
+# ax4.set(xlabel='Number of Fourier Terms', ylabel='Normalized AEP')
+
+# ax5.plot(num_WD, np.mean(aep_floris[:,-1],-1),'-o',markersize=3)
+# ax5.fill_between(num_WD, np.mean(aep_floris[:,-1],-1)-np.std(aep_floris[:,-1],-1),np.mean(aep_floris[:,-1],-1)+np.std(aep_floris[:,-1],-1),alpha=0.2)
+# ax5.set(xlabel='Number of Wind Directions', ylabel='Normalized AEP')
+
+# wd, ws = np.meshgrid(num_WD,num_WS)
+# im = ax3.contour(wd,ws,np.mean(time_floris[:,:-1],-1).T,levels=20)
+# plt.colorbar(im,ax=ax3,label='Normalized Time')
+# ax3.set(xlabel='Number of Wind Directions', ylabel='Number of Wind Speeds',title='Conventional')
+# im = ax6.contour(wd,ws,np.mean(aep_floris[:,:-1],-1).T,levels=20)
+# plt.colorbar(im,ax=ax6,label='Normalized AEP')
+# ax6.set(xlabel='Number of Wind Directions', ylabel='Number of Wind Speeds')
+# fig.suptitle('Case 0: Wind Rose Resolution')
+
+## Tuning: Option 1
 file_name = 'solutions/park' + str(0) + '.p'
 var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
 
@@ -22,41 +73,96 @@ num_terms = var[0]
 num_WD = var[1]
 num_WS = var[2]
 
+wd, ws = np.meshgrid(num_WD,num_WS)
+
+cmap = cm.get_cmap('viridis')
+
 fig = plt.figure(figsize=(14,7))
-ax1 = fig.add_subplot(231)
-ax2 = fig.add_subplot(232, sharey=ax1)
-ax3 = fig.add_subplot(233)
-ax4 = fig.add_subplot(234, sharex=ax1)
-ax5 = fig.add_subplot(235, sharex=ax2, sharey=ax4)
-ax6 = fig.add_subplot(236)
+ax1 = fig.add_subplot(221)
+ax3 = fig.add_subplot(222)
+ax6 = fig.add_subplot(224)
+ax4 = fig.add_subplot(223,sharey=ax1)
 
 ax1.plot(num_terms, np.mean(time_flowers,-1),'-o',markersize=3)
-ax1.fill_between(num_terms, np.mean(time_flowers,-1)-np.std(time_flowers,-1),np.mean(time_flowers,-1)+np.std(time_flowers,-1),alpha=0.2)
-ax1.set(xlabel='Number of Fourier Terms', ylabel='Normalized Time', title='FLOWERS')
-
-ax2.plot(num_WD, np.mean(time_floris[:,-1],-1),'-o',markersize=3)
-ax2.fill_between(num_WD, np.mean(time_floris[:,-1],-1)-np.std(time_floris[:,-1],-1),np.mean(time_floris[:,-1],-1)+np.std(time_floris[:,-1],-1),alpha=0.2)
-ax2.set(xlabel='Number of Wind Directions', ylabel='Normalized Time', title='Conventional (Avg)')
+# ax1.fill_between(num_terms, np.mean(time_flowers,-1)-np.std(time_flowers,-1),np.mean(time_flowers,-1)+np.std(time_flowers,-1),alpha=0.2)
+ax1.set(ylabel='Normalized Time', title='FLOWERS')
 
 ax4.plot(num_terms, np.mean(aep_flowers,-1),'-o',markersize=3)
-ax4.fill_between(num_terms, np.mean(aep_flowers,-1)-np.std(aep_flowers,-1),np.mean(aep_flowers,-1)+np.std(aep_flowers,-1),alpha=0.2)
+# ax4.fill_between(num_terms, np.mean(aep_flowers,-1)-np.std(aep_flowers,-1),np.mean(aep_flowers,-1)+np.std(aep_flowers,-1),alpha=0.2)
 ax4.set(xlabel='Number of Fourier Terms', ylabel='Normalized AEP')
 
-ax5.plot(num_WD, np.mean(aep_floris[:,-1],-1),'-o',markersize=3)
-ax5.fill_between(num_WD, np.mean(aep_floris[:,-1],-1)-np.std(aep_floris[:,-1],-1),np.mean(aep_floris[:,-1],-1)+np.std(aep_floris[:,-1],-1),alpha=0.2)
-ax5.plot(num_WD, aep_floris[:,-1,0],'-o',markersize=3)
-ax5.plot(num_WD, aep_floris[:,-1,1],'-o',markersize=3)
-ax5.plot(num_WD, aep_floris[:,-1,2],'-o',markersize=3)
-ax5.set(xlabel='Number of Wind Directions', ylabel='Normalized AEP')
-
-wd, ws = np.meshgrid(num_WD,num_WS)
 im = ax3.contour(wd,ws,np.mean(time_floris[:,:-1],-1).T,levels=20)
 plt.colorbar(im,ax=ax3,label='Normalized Time')
 ax3.set(xlabel='Number of Wind Directions', ylabel='Number of Wind Speeds',title='Conventional')
 im = ax6.contour(wd,ws,np.mean(aep_floris[:,:-1],-1).T,levels=20)
 plt.colorbar(im,ax=ax6,label='Normalized AEP')
 ax6.set(xlabel='Number of Wind Directions', ylabel='Number of Wind Speeds')
-fig.suptitle('Case 0: Wind Rose Resolution')
+
+# for i in range(len(num_WS)):
+#     ax3.plot(num_WD,np.mean(time_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
+#     ax3.fill_between(num_WD, np.mean(time_floris[:,i,:],-1)-np.std(time_floris[:,i],-1),np.mean(time_floris[:,i],-1)+np.std(time_floris[:,i],-1),alpha=0.2,color=cmap(num_WS[i]/26.0001))
+# cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cmap=cmap),ax=ax3,label='Number of Wind Speeds')
+# cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
+# ax3.set(title='Conventional')
+# for i in range(len(num_WS)):
+#     ax6.plot(num_WD,np.mean(aep_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
+#     ax6.fill_between(num_WD, np.mean(aep_floris[:,i,:],-1)-np.std(aep_floris[:,i],-1),np.mean(aep_floris[:,i],-1)+np.std(aep_floris[:,i],-1),alpha=0.2,color=cmap(num_WS[i]/26.0001))
+# cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cmap=cmap),ax=ax6,label='Number of Wind Speeds')
+# cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
+# # cbar.ax.set_yticklabels(num_WS)
+# ax6.set(xlabel='Number of Wind Directions')
+
+## Tuning: Option 2
+file_name = 'solutions/park' + str(0) + '.p'
+var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
+
+aep_flowers = np.array(aep_flowers) / aep_flowers[0,:]
+aep_floris = np.array(aep_floris) / aep_floris[0,0,:]
+
+time_flowers = np.array(time_flowers) / time_flowers[0]
+time_floris = np.array(time_floris) / time_floris[0,0,:]
+
+num_terms = var[0]
+num_WD = var[1]
+num_WS = var[2]
+
+cmap = cm.get_cmap('viridis')
+
+fig = plt.figure(figsize=(14,7))
+ax1 = fig.add_subplot(221)
+ax3 = fig.add_subplot(222, sharey=ax1)
+ax6 = fig.add_subplot(224, sharex=ax3)
+ax4 = fig.add_subplot(223, sharex=ax1, sharey=ax6)
+
+ax1.plot(num_terms, np.mean(time_flowers,-1),'-o',markersize=3)
+ax1.fill_between(num_terms, np.mean(time_flowers,-1)-np.std(time_flowers,-1),np.mean(time_flowers,-1)+np.std(time_flowers,-1),alpha=0.2)
+ax1.set(ylabel='Normalized Time', title='FLOWERS')
+
+ax4.plot(num_terms, np.mean(aep_flowers,-1),'-o',markersize=3)
+ax4.fill_between(num_terms, np.mean(aep_flowers,-1)-np.std(aep_flowers,-1),np.mean(aep_flowers,-1)+np.std(aep_flowers,-1),alpha=0.2)
+ax4.set(xlabel='Number of Fourier Terms', ylabel='Normalized AEP')
+
+for i in range(len(num_WS)):
+    ax3.plot(num_WD,np.mean(time_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
+    ax3.fill_between(num_WD, np.mean(time_floris[:,i,:],-1)-np.std(time_floris[:,i],-1),np.mean(time_floris[:,i],-1)+np.std(time_floris[:,i],-1),alpha=0.2,color=cmap(num_WS[i]/26.0001))
+cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cmap=cmap),ax=ax3,label='Number of Wind Speeds')
+cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
+ax3.set(title='Conventional')
+for i in range(len(num_WS)):
+    ax6.plot(num_WD,np.mean(aep_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
+    ax6.fill_between(num_WD, np.mean(aep_floris[:,i,:],-1)-np.std(aep_floris[:,i],-1),np.mean(aep_floris[:,i],-1)+np.std(aep_floris[:,i],-1),alpha=0.2,color=cmap(num_WS[i]/26.0001))
+cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cmap=cmap),ax=ax6,label='Number of Wind Speeds')
+cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
+# cbar.ax.set_yticklabels(num_WS)
+ax6.set(xlabel='Number of Wind Directions')
+if save == True:
+    plt.savefig('../tuning.png')
+
+# wd, ws = np.meshgrid(num_WD,num_WS)
+# im = ax6.contour(wd,ws,np.mean(aep_floris[:,:-1],-1).T,levels=20)
+# plt.colorbar(im,ax=ax6,label='Normalized AEP')
+# ax6.set(xlabel='Number of Wind Directions', ylabel='Number of Wind Speeds')
+# fig.suptitle('Case 0: Wind Rose Resolution')
 
 # # Case 1
 # file_name = 'solutions/park' + str(1) + '.p'
@@ -88,41 +194,103 @@ aep_park_fast = np.array(aep_park_fast) / 1e9
 
 wr = var[0]
 nt = var[1]
+cmap = cm.get_cmap('coolwarm')
 
 fig, ax = plt.subplots(1,1,figsize=(11,7))
 markers = ['o','v','^','s','P','*','X','D','p']
 for i in range(9):
-    # p, _ = np.ma.polyfit(np.ma.masked_where(wr!=i+1,aep_park_full),np.ma.masked_where(wr!=i+1,aep_flowers_full),1,cov=True)
-    # xrange = np.array([0,np.max(np.ma.masked_where(wr!=i+1,aep_park_full))])
-    # yrange = p[0]*xrange + p[1]
+    p, _ = np.ma.polyfit(np.ma.masked_where(wr!=i+1,aep_park_full),np.ma.masked_where(wr!=i+1,aep_flowers_full),1,cov=True)
+    xrange = np.array([0,np.max(np.ma.masked_where(wr!=i+1,aep_park_full))])
+    yrange = p[0]*xrange + p[1]
     im = ax.scatter(np.ma.masked_where(wr!=i+1,aep_park_full),np.ma.masked_where(wr!=i+1,aep_flowers_full),marker=markers[i],label='WR ' + str(i+1))
-    # ax.plot(xrange,yrange,'--')
+    ax.plot(xrange,yrange,'--')
 xlim = ax.get_xlim()
-ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
+ax.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.7*xlim[1]],alpha=0.2,label='[-30%,0%]',color='k')
+# ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
 ax.set(xlabel='Conventional AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
 ax.legend()
-# fig.suptitle('Case 2: Full Resolution AEP Discrepancy Across Randomized Cases')
+if save == True:
+    plt.savefig('../full_aep.png')
 
+# Fast AEP Comparison
+cmap = cm.get_cmap('coolwarm')
+
+fig, ax = plt.subplots(1,2,figsize=(14,5))
+ax[0].scatter(aep_park_full, aep_flowers_fast,10, zorder=9)
+xlim = ax[0].get_xlim()
+ax[0].plot([0,xlim[1]],[0,xlim[1]],'k--',linewidth=2, zorder=10)
+ax[0].fill_between([0, xlim[1]],[0, 0.7*xlim[1]],[0, 0.8*xlim[1]],alpha=0.4,label='[-30%,-20%]',color=cmap(0.1))
+ax[0].fill_between([0, xlim[1]],[0, 0.8*xlim[1]],[0, 0.9*xlim[1]],alpha=0.4,label='[-20%,-10%]',color=cmap(0.2))
+ax[0].fill_between([0, xlim[1]],[0, 0.9*xlim[1]],[0, 0.95*xlim[1]],alpha=0.4,label='[-10%,-5%]',color=cmap(0.3))
+ax[0].fill_between([0, xlim[1]],[0, 0.95*xlim[1]],[0, 0.99*xlim[1]],alpha=0.4,label='[-5%,-1%]',color=cmap(0.4))
+# ax[0].fill_between([0, xlim[1]],[0, 0.99*xlim[1]],[0, 1.01*xlim[1]],alpha=0.4,label='$\pm$1%',color=cmap(0.5))
+ax[0].fill_between([0, xlim[1]],[0, 1.01*xlim[1]],[0, 1.05*xlim[1]],alpha=0.4,label='[1%,5%]',color=cmap(0.6))
+ax[0].fill_between([0, xlim[1]],[0, 1.05*xlim[1]],[0, 1.1*xlim[1]],alpha=0.4,label='[5%,10%]',color=cmap(0.7))
+ax[0].fill_between([0, xlim[1]],[0, 1.1*xlim[1]],[0, 1.2*xlim[1]],alpha=0.4,label='[10%,20%]',color=cmap(0.8))
+ax[0].fill_between([0, xlim[1]],[0, 1.2*xlim[1]],[0, 1.3*xlim[1]],alpha=0.4,label='[20%,30%]',color=cmap(0.9))
+ax[0].legend()
+ax[0].set(xlabel='Conventional AEP [GWh]',ylabel='FLOWERS AEP [GWh]')
+
+ax[1].scatter(aep_park_full, aep_park_fast,10, color='tab:orange',zorder=9)
+ax[1].plot([0,xlim[1]],[0,xlim[1]],'k--',linewidth=2, zorder=10)
+ax[1].fill_between([0, xlim[1]],[0, 0.7*xlim[1]],[0, 0.8*xlim[1]],alpha=0.4,label='[-30%,-20%]',color=cmap(0.1))
+ax[1].fill_between([0, xlim[1]],[0, 0.8*xlim[1]],[0, 0.9*xlim[1]],alpha=0.4,label='[-20%,-10%]',color=cmap(0.2))
+ax[1].fill_between([0, xlim[1]],[0, 0.9*xlim[1]],[0, 0.95*xlim[1]],alpha=0.4,label='[-10%,-5%]',color=cmap(0.3))
+ax[1].fill_between([0, xlim[1]],[0, 0.95*xlim[1]],[0, 0.99*xlim[1]],alpha=0.4,label='[-5%,-1%]',color=cmap(0.4))
+# ax[0].fill_between([0, xlim[1]],[0, 0.99*xlim[1]],[0, 1.01*xlim[1]],alpha=0.4,label='$\pm$1%',color=cmap(0.5))
+ax[1].fill_between([0, xlim[1]],[0, 1.01*xlim[1]],[0, 1.05*xlim[1]],alpha=0.4,label='[1%,5%]',color=cmap(0.6))
+ax[1].fill_between([0, xlim[1]],[0, 1.05*xlim[1]],[0, 1.1*xlim[1]],alpha=0.4,label='[5%,10%]',color=cmap(0.7))
+ax[1].fill_between([0, xlim[1]],[0, 1.1*xlim[1]],[0, 1.2*xlim[1]],alpha=0.4,label='[10%,20%]',color=cmap(0.8))
+ax[1].fill_between([0, xlim[1]],[0, 1.2*xlim[1]],[0, 1.3*xlim[1]],alpha=0.4,label='[20%,30%]',color=cmap(0.9))
+ax[1].set(xlabel='Conventional AEP [GWh]',ylabel='Conventional-Fast AEP [GWh]')
+
+if save == True:
+    plt.savefig('../fast_aep.png')
+
+## Cost comparison
+
+cmap = cm.get_cmap('Greens')
 
 fig, ax = plt.subplots(1,1,figsize=(11,7))
-ax.scatter(aep_park_full, aep_flowers_fast, label='FLOWERS')
-ax.scatter(aep_park_full, aep_park_fast, label='Conventional')
-xlim = ax.get_xlim()
-ax.plot([0, xlim[1]], [0, xlim[1]], 'k--')
-# ax.plot([0, xlim[1]], [0, 0.8*xlim[1]], 'k--')
-# ax.fill_between([0, xlim[1]],[0, xlim[1]],[0, 0.8*xlim[1]],alpha=0.2,label='[0%,-20%] Error',color='k')
-ax.legend()
-ax.set(xlabel='Conventional AEP: Full Resolution [GWh]',ylabel='Fast AEP Models [GWh]')
-
-fig, ax = plt.subplots(1,1,figsize=(11,7))
-im = ax.scatter(time_park_fast,time_flowers_fast,c=nt,cmap='plasma')
+im = ax.scatter(time_park_fast,time_flowers_fast,c=nt,cmap='plasma',zorder=5)
+ax.set(xscale='log',yscale='log')
+plt.autoscale(False)
 plt.colorbar(im,ax=ax,label='Number of Turbines')
-xlim = ax.get_xlim()
-ax.loglog([10*xlim[0], 10*xlim[1]], xlim, 'k--')
-ax.loglog([50*xlim[0], 50*xlim[1]], xlim, 'k--')
-ax.fill_betweenx(xlim,[10*xlim[0], 10*xlim[1]],[50*xlim[0], 50*xlim[1]],alpha=0.2,label='10x-50x Speed',color='k')
-ax.set(xlabel='Conventional Time [s]',ylabel='FLOWERS Time [s]', xlim=xlim)
+# xlim = ax.get_xlim()
+# ylim = ax.get_xlim()
+# ax.loglog([xlim[0], xlim[1]], xlim, 'k--')
+# ax.loglog([10*xlim[0], 10*xlim[1]], xlim, 'k--')
+# ax.loglog([20*xlim[0], 20*xlim[1]], xlim, 'k--')
+# ax.loglog([50*xlim[0], 50*xlim[1]], xlim, 'k--')
+# ax.loglog([100*xlim[0], 100*xlim[1]], xlim, 'k--')
+ax.fill_betweenx(xlim,[xlim[0], xlim[1]],[10*xlim[0], 10*xlim[1]],alpha=0.4,label='1x-10x Speed',color=cmap(0.2))
+ax.fill_betweenx(xlim,[10*xlim[0], 10*xlim[1]],[20*xlim[0], 20*xlim[1]],alpha=0.4,label='10x-20x Speed',color=cmap(0.4))
+ax.fill_betweenx(xlim,[20*xlim[0], 20*xlim[1]],[50*xlim[0], 50*xlim[1]],alpha=0.4,label='20x-50x Speed',color=cmap(0.6))
+ax.fill_betweenx(xlim,[50*xlim[0], 50*xlim[1]],[100*xlim[0], 100*xlim[1]],alpha=0.4,label='50x-100x Speed',color=cmap(0.999))
+
+ax.set(xlabel='Conventional-Fast Time [s]',ylabel='FLOWERS Time [s]')
 ax.legend()
+if save == True:
+    plt.savefig('../cost.png')
+
+## Cost scaling
+
+def power_law(x, a, b):
+    return a*np.power(x, b)
+
+p , _ = curve_fit(power_law,nt,time_flowers_fast)
+q , _ = curve_fit(power_law,nt,time_park_fast)
+
+fig, ax = plt.subplots(1,1,figsize=(11,7))
+ax.scatter(nt,time_flowers_fast,s=40,facecolors='none', edgecolors='tab:blue')
+ax.scatter(nt,time_park_fast,s=40,facecolors='none', edgecolors='tab:orange')
+ax.plot(range(1,101),power_law(range(1,101),p[0],p[1]),'--',linewidth=3,label='FLOWERS: $\mathcal{O}(N^{1.28})$')
+ax.plot(range(1,101),power_law(range(1,101),q[0],q[1]),'--',linewidth=3,label='Conventional: $\mathcal{O}(N^{1.26})$')
+ax.set(xlabel='Number of Turbines',ylabel='AEP Evaluation Time [s]')
+ax.legend()
+
+if save == True:
+    plt.savefig('../cost_scaling.png')
 
 # ## Case 3
 # freq_std = np.zeros(9)

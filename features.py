@@ -7,13 +7,18 @@ import matplotlib.animation as animation
 
 import model as set
 
-# Load layout, boundaries, and rose TODO: add 1D to xmax and ymax
+
+# Define inputs 1,2,3,4,5,6,8,10,12,15,18
+model = 'gauss'
+terms = 10
+
+# Load layout, boundaries, and rose
 layout_x, layout_y = tl.load_layout('iea')
 
 xmin = -126.
-xmax = np.max(layout_x) #+ 126.
+xmax = np.max(layout_x) + 126.
 ymin = -126.
-ymax = np.max(layout_y) #+ 126.
+ymax = np.max(layout_y) + 126.
 
 boundaries = [
     (2714.4, 4049.4),
@@ -38,29 +43,27 @@ boundaries = [
 
 wind_rose = tl.load_wind_rose(6)
 
+file_name = 'solutions/smooth_' + model + str(terms) + '.p'
+
 # Initialize computations
-geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='park')
-geo.compare_aep(num_terms=5, wd_resolution=12.0, ws_avg=True, iter=1)
-freq_floris = geo.freq_floris
-                
-# fi = geo.flowers
-pi = geo.floris
+if model == 'flowers':
+    geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='park')
+    geo.compare_aep(num_terms=terms, wd_resolution=5.0, ws_avg=True, iter=1)
+    fi = geo.flowers
+else:
+    geo = set.ModelComparison(wind_rose, layout_x, layout_y, model=model)
+    geo.compare_aep(num_terms=5, wd_resolution=terms, ws_avg=True, iter=1)
+    freq_floris = geo.freq_floris
+    fi = geo.floris
 
-# geo = set.ModelComparison(wind_rose, layout_x, layout_y, model='gauss')
-# geo.compare_aep(num_terms=5, wd_resolution=18.0, ws_avg=True, iter=1)
-# gi = geo.floris
-# freq_floris = geo.freq_floris
-
-nx = 90
-ny = 135
+nx = 118
+ny = 170
 
 xx = np.linspace(xmin,xmax,nx,endpoint=True)
 yy = np.linspace(ymin,ymax,ny,endpoint=True)
 X,Y = np.meshgrid(xx,yy)
 
-# flowers_aep = np.zeros_like(X)
-park_aep = np.zeros_like(X)
-# gauss_aep = np.zeros_like(X)
+aep = np.zeros_like(X)
 infeasible = np.zeros_like(X)
 
 poly = Polygon(boundaries)
@@ -72,33 +75,26 @@ for i in range(ny):
         layout_x[12] = X[i,j]
         layout_y[12] = Y[i,j]
 
-        # fi.layout_x = layout_x
-        # fi.layout_y = layout_y
-
-        pi.reinitialize(layout=(layout_x.flatten(),layout_y.flatten()),time_series=True)
-        # gi.reinitialize(layout=(layout_x.flatten(),layout_y.flatten()),time_series=True)
+        if model == 'flowers':
+            fi.layout_x = layout_x
+            fi.layout_y = layout_y
+            aep[i,j] = fi.calculate_aep()
+        
+        else:
+            fi.reinitialize(layout=(layout_x.flatten(),layout_y.flatten()),time_series=True)
+            fi.calculate_wake()
+            aep[i,j] = np.sum(fi.get_farm_power() * freq_floris * 8760)
 
         pt = Point(X[i,j], Y[i,j])
         if np.any(np.sqrt((layout_x[12] - np.delete(layout_x,12))**2 + (layout_y[12] - np.delete(layout_y,12))**2) < 63.) or not pt.within(poly):
             infeasible[i,j] = 1
 
-        # flowers_aep[i,j] = fi.calculate_aep()
 
-        pi.calculate_wake()
-        park_aep[i,j] = np.sum(pi.get_farm_power() * freq_floris * 8760)
+aep = np.ma.masked_where(infeasible,aep)
 
-        # gi.calculate_wake()
-        # gauss_aep[i,j] = np.sum(gi.get_farm_power() * freq_floris * 8760)
+# aep /= np.amax(aep)
 
-# flowers_aep = np.ma.masked_where(infeasible,flowers_aep)
-park_aep = np.ma.masked_where(infeasible,park_aep)
-# gauss_aep = np.ma.masked_where(infeasible,gauss_aep)
-
-# flowers_aep /= np.amax(flowers_aep)
-park_aep /= np.amax(park_aep)
-# gauss_aep /= np.amax(gauss_aep)
-
-pickle.dump((X, Y, park_aep), open('solutions/smooth_park12.p','wb'))
+pickle.dump((X, Y, aep), open(file_name,'wb'))
 
 # # Mutation
 # # Load layout

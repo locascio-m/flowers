@@ -47,48 +47,70 @@ import matplotlib.animation as ani
 # fig.tight_layout()
 
 # Animation
-X, Y, gauss_1 = pickle.load(open('solutions/smooth_gauss1.p','rb'))
-_, _, gauss_2 = pickle.load(open('solutions/smooth_gauss2.p','rb'))
-_, _, gauss_3 = pickle.load(open('solutions/smooth_gauss3.p','rb'))
-_, _, gauss_5 = pickle.load(open('solutions/smooth_gauss5.p','rb'))
-_, _, gauss_8 = pickle.load(open('solutions/smooth_gauss8.p','rb'))
-_, _, gauss_12 = pickle.load(open('solutions/smooth_gauss12.p','rb'))
-_, _, gauss_18 = pickle.load(open('solutions/smooth_gauss18.p','rb'))
-_, _, flowers, _, _ = pickle.load(open('solutions/features_smooth.p','rb'))
+res = [18,15,12,10,8,6]
+terms = [3,4,5,10,15,20] #,30,45,60,90,180
+aep_park = []
+aep_gauss = []
+aep_flowers = []
+
+for idx in range(len(res)):
+    file_name = 'solutions/smooth_park' + str(res[idx]) + '.p'
+    X, Y, aep = pickle.load(open(file_name,'rb'))
+    aep_park.append(aep)
+
+    file_name = 'solutions/smooth_gauss' + str(res[idx]) + '.p'
+    X, Y, aep = pickle.load(open(file_name,'rb'))
+    aep_gauss.append(aep)
+
+    file_name = 'solutions/smooth_flowers' + str(terms[idx]) + '.p'
+    _, _, aep = pickle.load(open(file_name,'rb'))
+    aep_flowers.append(aep)
+
 
 X /= 126.
 Y /= 126.
 
-res = [18,12,8,5,3,2,1]
-aep = [gauss_18,gauss_12,gauss_8,gauss_5,gauss_3,gauss_2,gauss_1]
-
-fig, ax = plt.subplots(1,2,figsize=(8,4))
-ax[0].contour(X,Y,flowers,levels=20,cmap='viridis')
+fig, ax = plt.subplots(1,3,figsize=(10,4))
+ax[0].contour(X,Y,aep_flowers[2],levels=20,cmap='viridis')
 ax[0].set(
     title='FLOWERS', 
     xlabel='x/D', 
     ylabel='y/D',
     aspect='equal'
 )
-ax[1].contour(X,Y,gauss_5,levels=20,cmap='viridis')
+ax[1].contour(X,Y,aep_park[2],levels=20,cmap='viridis')
 ax[1].set(
+    title='Conventional-Park', 
+    xlabel='x/D', 
+    ylabel='y/D',
+    aspect='equal'
+)
+ax[2].contour(X,Y,aep_gauss[2],levels=20,cmap='viridis')
+ax[2].set(
     title='Conventional-Gauss', 
     xlabel='x/D', 
     ylabel='y/D',
     aspect='equal'
 )
 
-fig, ax = plt.subplots(1,2,figsize=(8,4))
+fig, ax = plt.subplots(1,3,figsize=(10,4))
 
-ax[0].contour(X,Y,flowers,levels=20,cmap='viridis')
+ax[0].contour(X,Y,aep_flowers[0],levels=20,cmap='viridis')
 ax[0].set(
-    title='FLOWERS', 
+    title='FLOWERS: 3', 
     xlabel='x/D', 
     ylabel='y/D',
     aspect='equal'
 )
-ax[1].contour(X,Y,aep[0],levels=20,cmap='viridis')
+ax[1].contour(X,Y,aep_park[0],levels=20,cmap='viridis')
 ax[1].set(
+    title='Conventional-Park: 18' + '$^\circ$', 
+    xlabel='x/D', 
+    ylabel='y/D',
+    aspect='equal'
+)
+ax[2].contour(X,Y,aep_gauss[0],levels=20,cmap='viridis')
+ax[2].set(
     title='Conventional-Gauss: 18' + '$^\circ$', 
     xlabel='x/D', 
     ylabel='y/D',
@@ -96,16 +118,32 @@ ax[1].set(
 )
 
 def animate(i):
-    if i > 0:
-        ax[1].clear()
-    ax[1].contour(X,Y,aep[i],levels=20,cmap='viridis')
+    ax[0].clear()
+    ax[1].clear()
+    ax[2].clear()
+    
+    ax[0].contour(X,Y,aep_flowers[i],levels=20,cmap='viridis')
+    ax[0].set(
+        title='FLOWERS: ' + str(terms[i]), 
+        xlabel='x/D', 
+        ylabel='y/D',
+        aspect='equal'
+    )
+    ax[1].contour(X,Y,aep_park[i],levels=20,cmap='viridis')
     ax[1].set(
+        title='Conventional-Park: ' + str(res[i]) + '$^\circ$', 
+        xlabel='x/D', 
+        ylabel='y/D',
+        aspect='equal'
+    )
+    ax[2].contour(X,Y,aep_gauss[i],levels=20,cmap='viridis')
+    ax[2].set(
         title='Conventional-Gauss: ' + str(res[i]) + '$^\circ$', 
         xlabel='x/D', 
         ylabel='y/D',
         aspect='equal'
     )
 
-mov = ani.FuncAnimation(fig, animate, interval=1000, frames=7, repeat=True)
+mov = ani.FuncAnimation(fig, animate, interval=1000, frames=6, repeat=True)
 mov.save('smoothness.mp4')
 plt.show()

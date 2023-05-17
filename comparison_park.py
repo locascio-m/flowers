@@ -112,6 +112,8 @@ if case == 2:
     time_park_fast = []
 
     for idx in range(N_max):
+        print(idx)
+        
         wind_rose = tl.load_wind_rose(N_wr[idx])
         layout_x, layout_y = tl.discrete_layout(n_turb=N_turb[idx], D=D, min_dist=3.0)
 
