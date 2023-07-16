@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore")
 D = 126.0
 num_terms = -1
 wd_resolution = 1.0
-case = 2
+case = 0
 
 # Run sweep
 var = []
@@ -193,4 +193,4 @@ if case == 4:
         time_flowers.append(tmp[0])
         time_floris.append(tmp[1])
 
-# pickle.dump((var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose), open(file,'wb'))
+pickle.dump((var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose), open(file,'wb'))
