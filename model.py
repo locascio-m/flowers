@@ -65,9 +65,10 @@ class ModelComparison:
         self.floris = wfct.floris_interface.FlorisInterface(input_file)
 
         self.floris.reinitialize(
-            layout=(layout_x.flatten(),layout_y.flatten()), 
+            layout_x=layout_x.flatten(),
+            layout_y=layout_y.flatten(), 
             wind_shear=0,
-            turbulence_intensity=0.07)
+            turbulence_intensity=0.075)
         
         # Initialize wind direction-speed frequency array for AEP
         wd_array = np.array(self.wind_rose["wd"].unique(), dtype=float)
@@ -86,9 +87,10 @@ class ModelComparison:
         # Initialize FLORIS interface for post-processing with Gauss model
         self.post = wfct.floris_interface.FlorisInterface("./input/gauss.yaml")
         self.post.reinitialize(
-            layout=(layout_x.flatten(),layout_y.flatten()), 
+            layout_x=layout_x.flatten(),
+            layout_y=layout_y.flatten(), 
             wind_shear=0,
-            turbulence_intensity=0.07)
+            turbulence_intensity=0.086)
         self.post_freq = self.freq_floris
 
         self.post.reinitialize(

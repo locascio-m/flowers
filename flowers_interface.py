@@ -58,7 +58,8 @@ class Flowers():
         # Transform wind direction to polar angle 
         wr["wd"] = np.remainder(450 - wr.wd, 360)
         wr.sort_values("wd", inplace=True)
-        wr = wr.append(wr.iloc[0])
+        # wr = wr.append(wr.iloc[0])
+        wr.loc[len(wr)] = wr.iloc[0]
         wr.freq_val /= np.sum(wr.freq_val)
 
         # Normalize wind speed by cut-out speed

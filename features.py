@@ -10,7 +10,7 @@ import model as set
 
 # Define inputs 1,2,3,4,5,6,8,10,12,15,18
 model = 'gauss'
-terms = 10
+terms = 18
 
 # Load layout, boundaries, and rose
 layout_x, layout_y = tl.load_layout('iea')
@@ -81,7 +81,7 @@ for i in range(ny):
             aep[i,j] = fi.calculate_aep()
         
         else:
-            fi.reinitialize(layout=(layout_x.flatten(),layout_y.flatten()),time_series=True)
+            fi.reinitialize(layout_x=layout_x.flatten(),layout_y=layout_y.flatten(),time_series=True)
             fi.calculate_wake()
             aep[i,j] = np.sum(fi.get_farm_power() * freq_floris * 8760)
 
@@ -92,7 +92,7 @@ for i in range(ny):
 
 aep = np.ma.masked_where(infeasible,aep)
 
-# aep /= np.amax(aep)
+aep /= np.amax(aep)
 
 pickle.dump((X, Y, aep), open(file_name,'wb'))
 
@@ -106,33 +106,60 @@ pickle.dump((X, Y, aep), open(file_name,'wb'))
 # nt = 31
 
 # # Define mutation parameters
-# N = 50
-# step = 126./(4*np.sqrt(2))
-# np.random.seed(3)
+# N = 25
+# step = 126./(5)
+# np.random.seed(4)
 
 # # Store AEP
-# flowers_aep = np.zeros(N+1)
-# park_aep= np.zeros(N+1)
-# gauss_aep = np.zeros(N+1)
+# flowers_100 = np.ones(N+1)
+# flowers_25 = np.ones(N+1)
+# flowers_5 = np.ones(N+1)
+# park_10 = np.ones(N+1)
+# park_5 = np.ones(N+1)
+# park_1 = np.ones(N+1)
+# gauss_10 = np.ones(N+1)
+# gauss_5 = np.ones(N+1)
+# gauss_1 = np.ones(N+1)
 
 # geo = set.ModelComparison(wr, xx, yy, model='park')
 # aep, _ = geo.compare_aep(num_terms=5, wd_resolution=5.0, ws_avg=True, iter=1, display=False)
-# flowers_norm = aep[0]
-# park_norm = aep[1]
+# flowers_5_norm = aep[0]
+# park_5_norm = aep[1]
 
-# freq_floris = geo.freq_floris     
-# fi = geo.flowers
-# pi = geo.floris
+# freq_5 = geo.freq_floris     
+# fi_5 = geo.flowers
+# pi_5 = geo.floris
+
+# geo = set.ModelComparison(wr, xx, yy, model='park')
+# aep, _ = geo.compare_aep(num_terms=25, wd_resolution=1.0, ws_avg=True, iter=1, display=False)
+# flowers_25_norm = aep[0]
+# park_1_norm = aep[1]
+# freq_1 = geo.freq_floris
+# fi_25 = geo.flowers
+# pi_1 = geo.floris
+
+# geo = set.ModelComparison(wr, xx, yy, model='park')
+# aep, _ = geo.compare_aep(num_terms=100, wd_resolution=10.0, ws_avg=True, iter=1, display=False)
+# flowers_100_norm = aep[0]
+# park_10_norm = aep[1]
+# freq_10 = geo.freq_floris   
+# fi_100 = geo.flowers  
+# pi_10 = geo.floris
 
 # geo = set.ModelComparison(wr, xx, yy, model='gauss')
 # aep, _ = geo.compare_aep(num_terms=5, wd_resolution=5.0, ws_avg=True, iter=1, display=False)
-# gauss_norm = aep[1]
+# gauss_5_norm = aep[1]
+# gi_5 = geo.floris
 
-# gi = geo.floris
+# geo = set.ModelComparison(wr, xx, yy, model='gauss')
+# aep, _ = geo.compare_aep(num_terms=5, wd_resolution=1.0, ws_avg=True, iter=1, display=False)
+# gauss_1_norm = aep[1]    
+# gi_1 = geo.floris
 
-# flowers_aep[0] = 1.
-# park_aep[0] = 1.
-# gauss_aep[0] = 1.
+# geo = set.ModelComparison(wr, xx, yy, model='gauss')
+# aep, _ = geo.compare_aep(num_terms=5, wd_resolution=10.0, ws_avg=True, iter=1, display=False)
+# gauss_10_norm = aep[1]    
+# gi_10 = geo.floris
 
 # x_all = [xx]
 # y_all = [yy]
@@ -142,19 +169,41 @@ pickle.dump((X, Y, aep), open(file_name,'wb'))
 #     x0 = xx + np.random.normal(0.,step,nt)
 #     y0 = yy + np.random.normal(0.,step,nt)
 
-#     fi.layout_x = x0
-#     fi.layout_y = y0
+#     fi_100.layout_x = x0
+#     fi_100.layout_y = y0
+#     fi_25.layout_x = x0
+#     fi_25.layout_y = y0
+#     fi_5.layout_x = x0
+#     fi_5.layout_y = y0
 
-#     pi.reinitialize(layout=(x0.flatten(),y0.flatten()),time_series=True)
-#     gi.reinitialize(layout=(x0.flatten(),y0.flatten()),time_series=True)
+#     pi_1.reinitialize(layout_x=x0.flatten(),layout_y=y0.flatten(),time_series=True)
+#     pi_5.reinitialize(layout_x=x0.flatten(),layout_y=y0.flatten(),time_series=True)
+#     pi_10.reinitialize(layout_x=x0.flatten(),layout_y=y0.flatten(),time_series=True)
+#     gi_1.reinitialize(layout_x=x0.flatten(),layout_y=y0.flatten(),time_series=True)
+#     gi_5.reinitialize(layout_x=x0.flatten(),layout_y=y0.flatten(),time_series=True)
+#     gi_10.reinitialize(layout_x=x0.flatten(),layout_y=y0.flatten(),time_series=True)
 
-#     flowers_aep[i] = fi.calculate_aep() / flowers_norm
+#     flowers_5[i] = fi_5.calculate_aep() / flowers_5_norm
+#     flowers_25[i] = fi_25.calculate_aep() / flowers_25_norm
+#     flowers_100[i] = fi_100.calculate_aep() / flowers_100_norm
 
-#     pi.calculate_wake()
-#     park_aep[i] = np.sum(pi.get_farm_power() * freq_floris * 8760) / park_norm
+#     pi_1.calculate_wake()
+#     park_1[i] = np.sum(pi_1.get_farm_power() * freq_1 * 8760) / park_1_norm
 
-#     gi.calculate_wake()
-#     gauss_aep[i] = np.sum(gi.get_farm_power() * freq_floris * 8760) / gauss_norm
+#     pi_5.calculate_wake()
+#     park_5[i] = np.sum(pi_5.get_farm_power() * freq_5 * 8760) / park_5_norm
+
+#     pi_10.calculate_wake()
+#     park_10[i] = np.sum(pi_10.get_farm_power() * freq_10 * 8760) / park_10_norm
+
+#     gi_1.calculate_wake()
+#     gauss_1[i] = np.sum(gi_1.get_farm_power() * freq_1 * 8760) / gauss_1_norm
+
+#     gi_5.calculate_wake()
+#     gauss_5[i] = np.sum(gi_5.get_farm_power() * freq_5 * 8760) / gauss_5_norm
+
+#     gi_10.calculate_wake()
+#     gauss_10[i] = np.sum(gi_10.get_farm_power() * freq_10 * 8760) / gauss_10_norm
 
 #     xx = x0
 #     yy = y0
@@ -162,26 +211,54 @@ pickle.dump((X, Y, aep), open(file_name,'wb'))
 #     x_all.append(x0)
 #     y_all.append(y0)
 
-# fig, (ax0,ax1) = plt.subplots(1,2, figsize=(11,7))
+# fig = plt.figure(figsize=(12,7))
+# ax0 = plt.subplot2grid((3,2),(0,0),rowspan=3)
+# ax1 = plt.subplot2grid((3,2),(0,1))
+# ax2 = plt.subplot2grid((3,2),(1,1))
+# ax3 = plt.subplot2grid((3,2),(2,1))
+
+# # fig, (ax0,ax1) = plt.subplots(1,2, )
 # ax0.set(aspect='equal', xlim=[-5,35], ylim=[-5,45], xlabel='x/D', ylabel='y/D')
-# ax1.set(xlim=[0,N], ylim=[0.96,1.04], xlabel='Iteration', ylabel='Normalized AEP')
+# ax1.set(xlim=[0,N], ylim=[0.975,1.025], ylabel='Normalized AEP',xticklabels=[])
+# ax2.set(xlim=[0,N], ylim=[0.975,1.025], ylabel='Normalized AEP',xticklabels=[])
+# ax3.set(xlim=[0,N], ylim=[0.975,1.025], xlabel='Iteration', ylabel='Normalized AEP')
+
+# plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20c.colors)
+# colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 # line0, = ax0.plot([],[],"o",color='tab:red',markersize=7)
-# line1, = ax1.plot([],[],"-o",markersize=3)
-# line2, = ax1.plot([],[],"-o",markersize=3)
-# line3, = ax1.plot([],[],"-o",markersize=3)
+# line1, = ax1.plot([],[],"-o",color=colors[0],markersize=3)
+# line2, = ax1.plot([],[],":o",color=colors[1],markersize=3)
+# line3, = ax1.plot([],[],"--o",color=colors[2],markersize=3)
+# line4, = ax2.plot([],[],"-o",color=colors[4],markersize=3)
+# line5, = ax2.plot([],[],":o",color=colors[5],markersize=3)
+# line6, = ax2.plot([],[],"--o",color=colors[6],markersize=3)
+# line7, = ax3.plot([],[],"-o",color=colors[8],markersize=3)
+# line8, = ax3.plot([],[],":o",color=colors[9],markersize=3)
+# line9, = ax3.plot([],[],"--o",color=colors[10],markersize=3)
+# fig.tight_layout()
 
 # # Function to update turbine positions
 # def animate(i):
 #     line0.set_data(x_all[i]/126., y_all[i]/126.)
-#     line1.set_data(range(i+1),flowers_aep[0:i+1])
-#     line2.set_data(range(i+1),park_aep[0:i+1])
-#     line3.set_data(range(i+1),gauss_aep[0:i+1])
-#     ax1.legend(['FLOWERS','Conventional-Park','Conventional-Gauss'])
-#     return line0, line1, line2, line3
+#     line1.set_data(range(i+1),flowers_100[0:i+1])
+#     line2.set_data(range(i+1),flowers_25[0:i+1])
+#     line3.set_data(range(i+1),flowers_5[0:i+1])
+#     line4.set_data(range(i+1),park_1[0:i+1])
+#     line5.set_data(range(i+1),park_5[0:i+1])
+#     line6.set_data(range(i+1),park_10[0:i+1])
+#     line7.set_data(range(i+1),gauss_1[0:i+1])
+#     line8.set_data(range(i+1),gauss_5[0:i+1])
+#     line9.set_data(range(i+1),gauss_10[0:i+1])
+#     ax1.legend(['FLOWERS: 100', 'FLOWERS: 25', 'FLOWERS: 5'],loc='upper left')
+#     ax2.legend(['Park: $1^\circ$','Park: $5^\circ$','Park: $10^\circ$'],loc='upper left')
+#     ax3.legend(['Gauss: $1^\circ$','Gauss: $5^\circ$','Gauss: $10^\circ$'],loc='upper left')
+#     return line0, line1, line2, line3, line4, line5, line6, line7, line8, line9
 
 # # Animation
 # ani = animation.FuncAnimation(fig, animate, frames=N+1, repeat=False)
 
 # ani.save('mutation.mp4')
+
+# plt.savefig('../mutation.png')
 # plt.show()

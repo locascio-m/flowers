@@ -10,7 +10,7 @@ import warnings
 
 from scipy.optimize import curve_fit
 
-save = False
+save = True
 
 # ## Case 0
 # file_name = 'solutions/park' + str(0) + '.p'
@@ -91,12 +91,14 @@ ax4.plot(num_terms, np.mean(aep_flowers,-1),'-o',markersize=3)
 # ax4.fill_between(num_terms, np.mean(aep_flowers,-1)-np.std(aep_flowers,-1),np.mean(aep_flowers,-1)+np.std(aep_flowers,-1),alpha=0.2)
 ax4.set(xlabel='Number of Fourier Terms', ylabel='Normalized AEP')
 
-im = ax3.contour(wd,ws,np.mean(time_floris[:,:-1],-1).T,levels=20)
+im = ax3.contourf(wd,ws,np.mean(time_floris[:,:-1],-1).T,levels=20)
 plt.colorbar(im,ax=ax3,label='Normalized Time')
 ax3.set(xlabel='Number of Wind Directions', ylabel='Number of Wind Speeds',title='Conventional')
-im = ax6.contour(wd,ws,np.mean(aep_floris[:,:-1],-1).T,levels=20)
+im = ax6.contourf(wd,ws,np.mean(aep_floris[:,:-1],-1).T,levels=20)
 plt.colorbar(im,ax=ax6,label='Normalized AEP')
 ax6.set(xlabel='Number of Wind Directions', ylabel='Number of Wind Speeds')
+if save == True:
+    plt.savefig('../tuning.png')
 
 # for i in range(len(num_WS)):
 #     ax3.plot(num_WD,np.mean(time_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
@@ -155,8 +157,6 @@ cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cm
 cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
 # cbar.ax.set_yticklabels(num_WS)
 ax6.set(xlabel='Number of Wind Directions')
-if save == True:
-    plt.savefig('../tuning.png')
 
 # wd, ws = np.meshgrid(num_WD,num_WS)
 # im = ax6.contour(wd,ws,np.mean(aep_floris[:,:-1],-1).T,levels=20)
