@@ -179,27 +179,27 @@ class Flowers():
                 )
 
         # Normalize positions by rotor radius
-        X /= self.D/2
-        Y /= self.D/2
+        X /= self.D
+        Y /= self.D
 
         # Convert to normalized polar coordinates
         R = np.sqrt(X**2 + Y**2)
         THETA = np.arctan2(Y,X) / (2 * np.pi)
 
         # Set up mask for rotor swept area
-        mask_area = np.array(R <= 1, dtype=int)
+        mask_area = np.array(R <= 0.5, dtype=int)
         mask_val = self.fs.c[0]
 
         # Critical polar angle of wake edge (as a function of distance from turbine)
         theta_c = np.arctan(
-            (1 / R + self.k * np.sqrt(1 + self.k**2 - R**(-2)))
-            / (-self.k / R + np.sqrt(1 + self.k**2 - R**(-2)))
+            (1 / (2*R) + self.k * np.sqrt(1 + self.k**2 - (2*R)**(-2)))
+            / (-self.k / (2*R) + np.sqrt(1 + self.k**2 - (2*R)**(-2)))
             ) / (2 * np.pi)
         theta_c = np.nan_to_num(theta_c)
         
         # Contribution from zero-frequency Fourier mode
-        du = self.fs.a[0] * theta_c / (self.k * R + 1)**2 * (
-            1 + (4 * np.pi**2 * theta_c**2 * self.k * R) / (3 * (self.k * R + 1)))
+        du = self.fs.a[0] * theta_c / (2 * self.k * R + 1)**2 * (
+            1 + (8 * np.pi**2 * theta_c**2 * self.k * R) / (3 * (2 * self.k * R + 1)))
 
         # Reshape variables for vectorized calculations
         n = np.arange(1, len(self.fs.b))
@@ -210,9 +210,9 @@ class Flowers():
         theta_c = np.tile(np.expand_dims(theta_c, axis=2),len(n))
 
         # Vectorized contribution of higher Fourier modes
-        du += np.sum((1 / (np.pi * n * (self.k * R + 1)**2) * (
+        du += np.sum((1 / (np.pi * n * (2 * self.k * R + 1)**2) * (
             a * np.cos(2 * np.pi * n * THETA) + b * np.sin(2 * np.pi * n * THETA)) * (
-                np.sin(2 * np.pi * n * theta_c) + self.k * R / (n**2 * (self.k * R + 1)) * (
+                np.sin(2 * np.pi * n * theta_c) + 2 * self.k * R / (n**2 * (2 * self.k * R + 1)) * (
                     ((2 * np.pi * theta_c * n)**2 - 2) * np.sin(2 * np.pi * n * theta_c) + 4*np.pi*n*theta_c*np.cos(2 * np.pi * n * theta_c)))), axis=2)
         
         # Apply mask for points within rotor radius

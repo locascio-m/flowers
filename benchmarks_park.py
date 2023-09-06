@@ -10,7 +10,7 @@ import warnings
 
 from scipy.optimize import curve_fit
 
-save = True
+save = False
 
 # ## Case 0
 # file_name = 'solutions/park' + str(0) + '.p'
@@ -73,7 +73,7 @@ num_terms = var[0]
 num_WD = var[1]
 num_WS = var[2]
 
-wd, ws = np.meshgrid(num_WD,num_WS)
+wd, ws = np.meshgrid(num_WD[:],num_WS)
 
 cmap = cm.get_cmap('viridis')
 
@@ -114,49 +114,49 @@ if save == True:
 # # cbar.ax.set_yticklabels(num_WS)
 # ax6.set(xlabel='Number of Wind Directions')
 
-## Tuning: Option 2
-file_name = 'solutions/park' + str(0) + '.p'
-var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
+# ## Tuning: Option 2
+# file_name = 'solutions/park' + str(0) + '.p'
+# var, aep_flowers, aep_floris, time_flowers, time_floris, layout_x, layout_y, wind_rose = pickle.load(open(file_name,'rb'))
 
-aep_flowers = np.array(aep_flowers) / aep_flowers[0,:]
-aep_floris = np.array(aep_floris) / aep_floris[0,0,:]
+# aep_flowers = np.array(aep_flowers) / aep_flowers[0,:]
+# aep_floris = np.array(aep_floris) / aep_floris[0,0,:]
 
-time_flowers = np.array(time_flowers) / time_flowers[0]
-time_floris = np.array(time_floris) / time_floris[0,0,:]
+# time_flowers = np.array(time_flowers) / time_flowers[0]
+# time_floris = np.array(time_floris) / time_floris[0,0,:]
 
-num_terms = var[0]
-num_WD = var[1]
-num_WS = var[2]
+# num_terms = var[0]
+# num_WD = var[1]
+# num_WS = var[2]
 
-cmap = cm.get_cmap('viridis')
+# cmap = cm.get_cmap('viridis')
 
-fig = plt.figure(figsize=(14,7))
-ax1 = fig.add_subplot(221)
-ax3 = fig.add_subplot(222, sharey=ax1)
-ax6 = fig.add_subplot(224, sharex=ax3)
-ax4 = fig.add_subplot(223, sharex=ax1, sharey=ax6)
+# fig = plt.figure(figsize=(14,7))
+# ax1 = fig.add_subplot(221)
+# ax3 = fig.add_subplot(222, sharey=ax1)
+# ax6 = fig.add_subplot(224, sharex=ax3)
+# ax4 = fig.add_subplot(223, sharex=ax1, sharey=ax6)
 
-ax1.plot(num_terms, np.mean(time_flowers,-1),'-o',markersize=3)
-ax1.fill_between(num_terms, np.mean(time_flowers,-1)-np.std(time_flowers,-1),np.mean(time_flowers,-1)+np.std(time_flowers,-1),alpha=0.2)
-ax1.set(ylabel='Normalized Time', title='FLOWERS')
+# ax1.plot(num_terms, np.mean(time_flowers,-1),'-o',markersize=3)
+# ax1.fill_between(num_terms, np.mean(time_flowers,-1)-np.std(time_flowers,-1),np.mean(time_flowers,-1)+np.std(time_flowers,-1),alpha=0.2)
+# ax1.set(ylabel='Normalized Time', title='FLOWERS')
 
-ax4.plot(num_terms, np.mean(aep_flowers,-1),'-o',markersize=3)
-ax4.fill_between(num_terms, np.mean(aep_flowers,-1)-np.std(aep_flowers,-1),np.mean(aep_flowers,-1)+np.std(aep_flowers,-1),alpha=0.2)
-ax4.set(xlabel='Number of Fourier Terms', ylabel='Normalized AEP')
+# ax4.plot(num_terms, np.mean(aep_flowers,-1),'-o',markersize=3)
+# ax4.fill_between(num_terms, np.mean(aep_flowers,-1)-np.std(aep_flowers,-1),np.mean(aep_flowers,-1)+np.std(aep_flowers,-1),alpha=0.2)
+# ax4.set(xlabel='Number of Fourier Terms', ylabel='Normalized AEP')
 
-for i in range(len(num_WS)):
-    ax3.plot(num_WD,np.mean(time_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
-    ax3.fill_between(num_WD, np.mean(time_floris[:,i,:],-1)-np.std(time_floris[:,i],-1),np.mean(time_floris[:,i],-1)+np.std(time_floris[:,i],-1),alpha=0.2,color=cmap(num_WS[i]/26.0001))
-cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cmap=cmap),ax=ax3,label='Number of Wind Speeds')
-cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
-ax3.set(title='Conventional')
-for i in range(len(num_WS)):
-    ax6.plot(num_WD,np.mean(aep_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
-    ax6.fill_between(num_WD, np.mean(aep_floris[:,i,:],-1)-np.std(aep_floris[:,i],-1),np.mean(aep_floris[:,i],-1)+np.std(aep_floris[:,i],-1),alpha=0.2,color=cmap(num_WS[i]/26.0001))
-cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cmap=cmap),ax=ax6,label='Number of Wind Speeds')
-cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
-# cbar.ax.set_yticklabels(num_WS)
-ax6.set(xlabel='Number of Wind Directions')
+# for i in range(len(num_WS)):
+#     ax3.plot(num_WD,np.mean(time_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
+#     ax3.fill_between(num_WD, np.mean(time_floris[:,i,:],-1)-np.std(time_floris[:,i],-1),np.mean(time_floris[:,i],-1)+np.std(time_floris[:,i],-1),alpha=0.2,color=cmap(num_WS[i]/26.0001))
+# cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cmap=cmap),ax=ax3,label='Number of Wind Speeds')
+# cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
+# ax3.set(title='Conventional')
+# for i in range(len(num_WS)):
+#     ax6.plot(num_WD,np.mean(aep_floris[:,i,:],-1),'-o',markersize=3,color=cmap(num_WS[i]/26.0001))
+#     ax6.fill_between(num_WD, np.mean(aep_floris[:,i,:],-1)-np.std(aep_floris[:,i],-1),np.mean(aep_floris[:,i],-1)+np.std(aep_floris[:,i],-1),alpha=0.2,color=cmap(num_WS[i]/26.0001))
+# cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=3,vmax=26.0001), cmap=cmap),ax=ax6,label='Number of Wind Speeds')
+# cbar.ax.set_yticks([3,4,5,7,10,15,20,26])
+# # cbar.ax.set_yticklabels(num_WS)
+# ax6.set(xlabel='Number of Wind Directions')
 
 # wd, ws = np.meshgrid(num_WD,num_WS)
 # im = ax6.contour(wd,ws,np.mean(aep_floris[:,:-1],-1).T,levels=20)
