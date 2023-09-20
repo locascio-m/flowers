@@ -97,8 +97,8 @@ def discrete_layout(n_turb=0, D=126.0, min_dist=3.0, idx=None, spacing=False):
         raise ValueError("Must supply number of turbines.")
 
     # Initialize RNG and containers
-    # if idx != None:
-    #     np.random.seed(idx)
+    if idx != None:
+        np.random.seed(idx)
 
     xx = np.zeros(n_turb)
     yy = np.zeros(n_turb)
@@ -423,7 +423,7 @@ def resample_wind_speed(df, ws=np.arange(0, 26, 1.0)):
 
     return df
 
-def resample_average_ws_by_wd(df, adjust=False):
+def resample_average_ws_by_wd(df):
         """
         Calculate the mean wind speed for each wind direction bin
         and resample the wind rose. (Copied from FLORIS)
@@ -449,19 +449,13 @@ def resample_average_ws_by_wd(df, adjust=False):
 
         ws_avg = []
 
-        if adjust:
-            for val in df.wd.unique():
-                tmp = np.array(df.loc[df["wd"] == val]["ws"])
-                tmp2 = np.array(df.loc[df["wd"] == val]["freq_val"]/df.loc[df["wd"] == val]["freq_val"].sum())
-                ws_avg.append(np.sum(tmp**3 * tmp2)**(1/3))
-        else:
-            for val in df.wd.unique():
-                ws_avg.append(
-                    np.array(
-                        df.loc[df["wd"] == val]["ws"] * df.loc[df["wd"] == val]["freq_val"]
-                    ).sum()
-                    / df.loc[df["wd"] == val]["freq_val"].sum()
-                )
+        for val in df.wd.unique():
+            ws_avg.append(
+                np.array(
+                    df.loc[df["wd"] == val]["ws"] * df.loc[df["wd"] == val]["freq_val"]
+                ).sum()
+                / df.loc[df["wd"] == val]["freq_val"].sum()
+            )
 
         # Regroup
         df = df.groupby("wd").sum()
@@ -482,7 +476,7 @@ def resample_average_ws_by_wd(df, adjust=False):
 # Turbine parameter tables
 ###########################################################################
 
-def ct_lookup(u, ct=None):
+def ct_lookup(u, turbine_type, ct=None):
     """
     Look-up table for thrust coefficient of the NREL 5 MW turbine.
 
@@ -497,7 +491,7 @@ def ct_lookup(u, ct=None):
     if ct != None:
         ct_table = np.array([0.0, 0.0, ct, ct, 0.0, 0.0])
         u_table = 1/25. * np.array([0.0, 2.0, 2.5, 25.01, 25.02, 50.])
-    else:
+    elif turbine_type == 'nrel_5MW':
         ct_table = np.array([0.0, 0.0, 0.0, 0.99, 0.99, 0.97373036, 0.92826162, 0.89210543,
         0.86100905, 0.835423, 0.81237673, 0.79225789, 0.77584769, 0.7629228, 0.76156073,
         0.76261984, 0.76169723, 0.75232027, 0.74026851, 0.72987175, 0.70701647, 0.54054532,
@@ -512,7 +506,7 @@ def ct_lookup(u, ct=None):
     
     return np.interp(u, u_table, ct_table)
 
-def cp_lookup(u, cp=None):
+def cp_lookup(u, turbine_type, cp=None):
     """
     Look-up table for power coefficient of the NREL 5 MW turbine.
 
@@ -526,7 +520,7 @@ def cp_lookup(u, cp=None):
     if cp != None:
         cp_table = np.array([0.0, 0.0, cp, cp, 0.0, 0.0])
         u_table = 1/25. * np.array([0.0, 2.0, 2.5, 25.01, 25.02, 50.])
-    else:
+    elif turbine_type == 'nrel_5MW':
         cp_table = np.array([0.0, 0.0, 0.0, 0.178085, 0.289075, 0.349022, 0.384728,
         0.406059, 0.420228, 0.428823, 0.433873, 0.436223, 0.436845, 0.436575, 0.436511,
         0.436561, 0.436517, 0.435903, 0.434673, 0.433230, 0.430466, 0.378869, 0.335199,

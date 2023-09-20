@@ -30,10 +30,10 @@ farm:
 flow_field:
   air_density: 1.225
   reference_wind_height: -1 # -1 is code for use the hub height
-  turbulence_intensity: 0.121
+  turbulence_intensity: 0.07
   wind_directions:
   - 270.0
-  wind_shear: 0.12
+  wind_shear: 0.0
   wind_speeds:
   - 8.0
   wind_veer: 0.0

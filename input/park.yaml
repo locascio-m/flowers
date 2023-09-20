@@ -33,7 +33,7 @@ flow_field:
   turbulence_intensity: 0.06
   wind_directions:
   - 270.0
-  wind_shear: 0.12
+  wind_shear: 0.0
   wind_speeds:
   - 8.0
   wind_veer: 0.0

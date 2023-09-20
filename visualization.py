@@ -197,7 +197,7 @@ def plot_optimal_layout(
     if ax is None:
         _, ax = plt.subplots()
     
-    if not boundaries:
+    if not boundaries.any():
         raise ValueError("Must supply boundaries to plot layout.")
     
     # if x_final or not x_init or not y_final or not y_init:
