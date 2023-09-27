@@ -265,7 +265,7 @@ class WPLOInterface():
         self.floris_interface.reinitialize(wind_directions=wr.wd,wind_speeds=wr.ws,layout_x=layout_x.flatten(),layout_y=layout_y.flatten(),time_series=True)
 
         # Initialize post-processing interface
-        self.post_processing = wfct.floris_interface.FlorisInterface("./input/gauss.yaml")
+        self.post_processing = wfct.floris_interface.FlorisInterface("./input/park.yaml")
         wind_rose = tl.resample_wind_speed(wind_rose, ws=np.arange(1.,26.,1.))
         wd_array = np.array(wind_rose["wd"].unique(), dtype=float)
         ws_array = np.array(wind_rose["ws"].unique(), dtype=float)
@@ -325,7 +325,7 @@ class WPLOInterface():
         # Solve optimization problem
         print("Solving layout optimization problem.")
         sol = prob.optimize()
-        print("Problem solved!")
+        print("Optimization complete: " + str(sol.optInform['text']))
 
         # Define solution dictionary and gather data
         self.solution = dict()
@@ -338,17 +338,18 @@ class WPLOInterface():
         self.solution["solver_time"] = float(sol.optCodeTime)
         self.solution["obj_calls"] = float(sol.userObjCalls)
         self.solution["grad_calls"] = float(sol.userSensCalls)
+        self.solution["exit_code"] = sol.optInform['text']
         self.solution["init_aep"] = self._aep_initial
 
         # # Get layout and objective history
-        hist = pyoptsparse.pyOpt_history.History(history)
+        hist = pyoptsparse.pyOpt_history.History(history,temp=True)
         self.solution["hist_x"], self.solution["hist_y"] = prob.parse_hist_vars(hist)
         self.solution["iter"] = len(self.solution["hist_x"]-1)
 
         # Post process AEP
         hist_aep = np.zeros(len(self.solution["hist_x"]))
         hist_aep[0] = self._aep_initial
-        for n in np.arange(1,self.solution["iter"]):
+        for n in np.arange(1,self.solution["iter"]-1):
             self.post_processing.reinitialize(layout_x=self.solution["hist_x"][n].flatten(),layout_y=self.solution["hist_y"][n].flatten())
             self.post_processing.calculate_wake()
             hist_aep[n] = np.sum(self.post_processing.get_farm_power() * self._freq_2D * 8760)

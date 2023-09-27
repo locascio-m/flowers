@@ -12,15 +12,20 @@ class LayoutOptimizer():
     def _base_init_(self, layout_x, layout_y, boundaries, solver="SNOPT", timer=None, options=None, history_file='hist.hist', output_file='out.out'):
 
         # Save boundary information
-        self._boundaries = boundaries
-        self._boundary_polygon = Polygon(boundaries)
-        self._boundary_line = LineString(boundaries)
+        self._boundaries = np.array(boundaries).T
+        self._nbounds = len(self._boundaries[0])
+
+        # Compute edge information
+        self._boundary_edge = np.roll(self._boundaries, -1) - self._boundaries
+        self._boundary_len = np.sqrt(self._boundary_edge[0]**2 + self._boundary_edge[1]**2)
+        self._boundary_norm = np.array([-self._boundary_edge[1],self._boundary_edge[0]]) / self._boundary_len
+        self._boundary_int = (np.roll(self._boundary_norm,-1) + self._boundary_norm) / 2
 
         # Position normalization
-        self._xmin = np.min([tup[0] for tup in boundaries])
-        self._xmax = np.max([tup[0] for tup in boundaries])
-        self._ymin = np.min([tup[1] for tup in boundaries])
-        self._ymax = np.max([tup[1] for tup in boundaries])
+        self._xmin = np.min(self._boundaries[0])
+        self._xmax = np.max(self._boundaries[0])
+        self._ymin = np.min(self._boundaries[1])
+        self._ymax = np.max(self._boundaries[1])
 
         self._x0 = self._norm(layout_x, self._xmin, self._xmax)
         self._y0 = self._norm(layout_y, self._ymin, self._ymax)
@@ -50,7 +55,7 @@ class LayoutOptimizer():
             self.optOptions = {
                 "ACC": 1e-6,
                 "IFILE": output_file,
-                "MAXIT": 10,
+                "MAXIT": 100,
             }
         elif solver == "NSGA2":
             self.optOptions = {
@@ -75,16 +80,57 @@ class LayoutOptimizer():
     ###########################################################################
     # User constraint function
     ###########################################################################
-    # TODO: fill in analytic boundary constraint
-    def _boundary_constraint(self):
-        boundary_con = np.zeros(self._nturbs)
-        for i in range(self._nturbs):
-            loc = Point(self._x[i], self._y[i])
-            boundary_con[i] = loc.distance(self._boundary_line)
-            if self._boundary_polygon.contains(loc)==True:
-                boundary_con[i] *= -1.0
+    def _boundary_constraint(self, gradient=False):
+        # Transform inputs
+        points = np.array([self._x,self._y])
 
-        return boundary_con
+        # Compute distances from turbines to boundary points
+        a = np.zeros((self._nturbs,2,self._nbounds))
+        for i in range(self._nturbs):
+            a[i] = np.expand_dims(points[:,i].T,axis=-1) - self._boundaries
+
+        # Compute projections
+        a_edge = np.sum(a*self._boundary_edge, axis=1) / self._boundary_len
+        a_int = np.sum(a*self._boundary_norm, axis=1)
+        sigma = np.sign(np.sum(a*self._boundary_int, axis=1))
+
+        # Initialize signed distance containers
+        C = np.zeros(self._nturbs)
+        D = np.zeros(self._nbounds)
+        if gradient:
+            Cx = np.zeros(self._nturbs)
+            Cy = np.zeros(self._nturbs)
+
+        # Compute signed distance
+        for i in range(self._nturbs):
+            for k in range(self._nbounds):
+                if a_edge[i,k] < 0:
+                    D[k] = np.sqrt(a[i,0,k]**2 + a[i,1,k]**2)*sigma[i,k]
+                elif a_edge[i,k] > self._boundary_len[k]:
+                    D[k] = np.sqrt(a[i,0,(k+1)%self._nbounds]**2 + a[i,1,(k+1)%self._nbounds]**2)*sigma[i,k]
+                else:
+                    D[k] = a_int[i,k]
+            
+            # Select minimum distance
+            idx = np.argmin(np.abs(D))
+            C[i] = D[idx]
+
+            if gradient:
+                if a_edge[i,idx] < 0:
+                    Cx[i] = (points[0,i] - self._boundaries[0,idx]) / np.sqrt((self._boundaries[0,idx]-points[0,i])**2 + (self._boundaries[1,idx]-points[1,i])**2)
+                    Cy[i] = (points[1,i] - self._boundaries[1,idx]) / np.sqrt((self._boundaries[0,idx]-points[0,i])**2 + (self._boundaries[1,idx]-points[1,i])**2)
+                elif a_edge[i,idx] > self._boundary_len[idx]:
+                    Cx[i] = (points[0,i] - self._boundaries[0,(idx+1)%self._nbounds]) / np.sqrt((self._boundaries[0,(idx+1)%self._nbounds]-points[0,i])**2 + (self._boundaries[1,(idx+1)%self._nbounds]-points[1,i])**2)
+                    Cy[i] = (points[1,i] - self._boundaries[1,(idx+1)%self._nbounds]) / np.sqrt((self._boundaries[0,(idx+1)%self._nbounds]-points[0,i])**2 + (self._boundaries[1,(idx+1)%self._nbounds]-points[1,i])**2)
+                else:
+                    Cx[i] = (self._boundaries[1,idx] - self._boundaries[1,(idx+1)%self._nbounds]) / self._boundary_len[idx]
+                    Cy[i] = (self._boundaries[0,(idx+1)%self._nbounds] - self._boundaries[0,idx]) / self._boundary_len[idx]
+        
+        # Distance is negative if inside boundary for optimization problem TODO: remove negatives and swap sign of n
+        if gradient:
+            return self._norm(-C, self._xmin, self._xmax), -Cx, -Cy
+        else:
+            return self._norm(-C, self._xmin, self._xmax)
 
     ###########################################################################
     # pyOptSparse wrapper functions
@@ -118,11 +164,11 @@ class LayoutOptimizer():
         return optProb
 
     def add_con_group(self, optProb):
-        optProb.addConGroup("boundary_con", self._nturbs, upper=0.0)
+        optProb.addConGroup("con", self._nturbs, upper=0.0)
         return optProb
     
     def compute_cons(self, funcs):
-        funcs["boundary_con"] = self._boundary_constraint()
+        funcs["con"] = self._boundary_constraint()
         return funcs
 
 
@@ -146,7 +192,8 @@ class FlowersOptimizer(LayoutOptimizer):
 
     def __init__(self, flowers_interface, layout_x, layout_y, boundaries, solver="SNOPT", timer=None, history_file='hist.hist', output_file='out.out'):
         self.model = flowers_interface
-        self._aep_initial = self.model.calculate_aep()
+        self._aep_initial, self._grad_initial = self.model.calculate_aep(gradient=True)
+        self._grad_initial = 1e-4*self._aep_initial # TODO: adjust gradient scaling
         self._base_init_(layout_x, layout_y, boundaries, solver=solver, timer=timer, history_file=history_file, output_file=output_file)
 
     def _obj_func(self, varDict):
@@ -169,10 +216,22 @@ class FlowersOptimizer(LayoutOptimizer):
         return funcs, fail
 
     # Optionally, the user can supply the optimization with gradients
-    # def _sens_func(self, varDict, funcs):
-    #     funcsSens = {}
-    #     fail = False
-    #     return funcsSens, fail
+    def _sens_func(self, varDict, funcs):
+        # Parse the variable dictionary
+        self.parse_opt_vars(varDict)
+
+        self.model.reinitialize(layout_x=self._x, layout_y=self._y)
+
+        _, tmp = self.model.calculate_aep(gradient=True)
+        funcsSens = {}
+        funcsSens["obj"] = {"x": -tmp[:,0]/self._grad_initial, "y": -tmp[:,1]/self._grad_initial}
+        
+        _, tmpx, tmpy = self._boundary_constraint(gradient=True)
+        funcsSens["con"] = {"x": np.diag(tmpx), "y": np.diag(tmpy)}
+
+        fail = False
+
+        return funcsSens, fail
 
 
 class ConventionalOptimizer(LayoutOptimizer):
