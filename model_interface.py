@@ -336,12 +336,12 @@ class WPLOInterface():
         self.solution["obj_time"] = float(sol.userObjTime)
         self.solution["grad_time"] = float(sol.userSensTime)
         self.solution["solver_time"] = float(sol.optCodeTime)
-        self.solution["obj_calls"] = float(sol.userObjCalls)
-        self.solution["grad_calls"] = float(sol.userSensCalls)
+        self.solution["obj_calls"] = int(sol.userObjCalls)
+        self.solution["grad_calls"] = int(sol.userSensCalls)
         self.solution["exit_code"] = sol.optInform['text']
         self.solution["init_aep"] = self._aep_initial
 
-        # # Get layout and objective history
+        # Get layout and objective history
         hist = pyoptsparse.pyOpt_history.History(history,temp=True)
         self.solution["hist_x"], self.solution["hist_y"] = prob.parse_hist_vars(hist)
         self.solution["iter"] = len(self.solution["hist_x"]-1)

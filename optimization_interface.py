@@ -16,10 +16,10 @@ class LayoutOptimizer():
         self._nbounds = len(self._boundaries[0])
 
         # Compute edge information
-        self._boundary_edge = np.roll(self._boundaries, -1) - self._boundaries
+        self._boundary_edge = np.roll(self._boundaries,-1,axis=1) - self._boundaries
         self._boundary_len = np.sqrt(self._boundary_edge[0]**2 + self._boundary_edge[1]**2)
-        self._boundary_norm = np.array([-self._boundary_edge[1],self._boundary_edge[0]]) / self._boundary_len
-        self._boundary_int = (np.roll(self._boundary_norm,-1) + self._boundary_norm) / 2
+        self._boundary_norm = np.array([self._boundary_edge[1],-self._boundary_edge[0]]) / self._boundary_len
+        self._boundary_int = (np.roll(self._boundary_norm,1,axis=1) + self._boundary_norm) / 2
 
         # Position normalization
         self._xmin = np.min(self._boundaries[0])
@@ -47,9 +47,12 @@ class LayoutOptimizer():
         elif solver == "SNOPT":
             self.optOptions = {
                 "Print file": output_file,
+                "iSumm": 0,
                 "Major optimality tolerance": 1e-4,
+                "Minor optimality tolerance": 1e-4,
                 "Major feasibility tolerance": 1e-4,
-                "Scale option": 2,
+                "Minor feasibility tolerance": 1e-4,
+                "Scale option": 0,
                 }
         elif solver == "SLSQP":
             self.optOptions = {
@@ -107,7 +110,7 @@ class LayoutOptimizer():
                 if a_edge[i,k] < 0:
                     D[k] = np.sqrt(a[i,0,k]**2 + a[i,1,k]**2)*sigma[i,k]
                 elif a_edge[i,k] > self._boundary_len[k]:
-                    D[k] = np.sqrt(a[i,0,(k+1)%self._nbounds]**2 + a[i,1,(k+1)%self._nbounds]**2)*sigma[i,k]
+                    D[k] = np.sqrt(a[i,0,(k+1)%self._nbounds]**2 + a[i,1,(k+1)%self._nbounds]**2)*sigma[i,(k+1)%self._nbounds]
                 else:
                     D[k] = a_int[i,k]
             
@@ -123,14 +126,14 @@ class LayoutOptimizer():
                     Cx[i] = (points[0,i] - self._boundaries[0,(idx+1)%self._nbounds]) / np.sqrt((self._boundaries[0,(idx+1)%self._nbounds]-points[0,i])**2 + (self._boundaries[1,(idx+1)%self._nbounds]-points[1,i])**2)
                     Cy[i] = (points[1,i] - self._boundaries[1,(idx+1)%self._nbounds]) / np.sqrt((self._boundaries[0,(idx+1)%self._nbounds]-points[0,i])**2 + (self._boundaries[1,(idx+1)%self._nbounds]-points[1,i])**2)
                 else:
-                    Cx[i] = (self._boundaries[1,idx] - self._boundaries[1,(idx+1)%self._nbounds]) / self._boundary_len[idx]
-                    Cy[i] = (self._boundaries[0,(idx+1)%self._nbounds] - self._boundaries[0,idx]) / self._boundary_len[idx]
+                    Cx[i] = (self._boundaries[1,(idx+1)%self._nbounds] - self._boundaries[1,idx]) / self._boundary_len[idx]
+                    Cy[i] = (self._boundaries[0,idx] - self._boundaries[0,(idx+1)%self._nbounds]) / self._boundary_len[idx]
         
-        # Distance is negative if inside boundary for optimization problem TODO: remove negatives and swap sign of n
+        # Distance is negative if inside boundary for optimization problem 
         if gradient:
-            return self._norm(-C, self._xmin, self._xmax), -Cx, -Cy
+            return self._norm(C, self._xmin, self._xmax), Cx, Cy
         else:
-            return self._norm(-C, self._xmin, self._xmax)
+            return self._norm(C, self._xmin, self._xmax)
 
     ###########################################################################
     # pyOptSparse wrapper functions
@@ -159,8 +162,8 @@ class LayoutOptimizer():
         return np.array(self._unnorm(val['x'], self._xmin, self._xmax)), np.array(self._unnorm(val['y'], self._ymin, self._ymax))
 
     def add_var_group(self, optProb):
-        optProb.addVarGroup("x", self._nturbs, type="c", lower=0.0, upper=1.0, value=self._x0)
-        optProb.addVarGroup("y", self._nturbs, type="c", lower=0.0, upper=1.0, value=self._y0)
+        optProb.addVarGroup("x", self._nturbs, type="c", value=self._x0)
+        optProb.addVarGroup("y", self._nturbs, type="c", value=self._y0)
         return optProb
 
     def add_con_group(self, optProb):
