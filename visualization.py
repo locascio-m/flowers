@@ -197,8 +197,8 @@ def plot_optimal_layout(
     if ax is None:
         _, ax = plt.subplots()
     
-    if not boundaries.any():
-        raise ValueError("Must supply boundaries to plot layout.")
+    # if not boundaries.any():
+    #     raise ValueError("Must supply boundaries to plot layout.")
     
     # if x_final or not x_init or not y_final or not y_init:
     #     raise ValueError("Must supply all required layout coordinates.")
@@ -208,7 +208,7 @@ def plot_optimal_layout(
         x1 = x_final/D
         y0 = y_init/D
         y1 = y_final/D
-        verts = boundaries / D
+        verts = np.array(boundaries) / D
         r = 0.5
         xlab = 'x/D'
         ylab = 'y/D'

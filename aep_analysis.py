@@ -1,6 +1,6 @@
 import numpy as np
 import pickle
-from shapely.geometry import Polygon, Point
+from shapely.geometry import Polygon, Point, LineString
 import warnings
 
 import model_interface as inter
@@ -15,7 +15,7 @@ AEP models
 
 """
 
-case = 3
+case = 0
 
 
 ###########################################################################
@@ -23,7 +23,7 @@ case = 3
 ###########################################################################
 if case == 0:
     # Analysis options
-    N_max = 100
+    N_max = 200
     num_terms= 10
     wd_resolution = 5.0
     ws_avg = True
@@ -31,7 +31,7 @@ if case == 0:
     # Initialization
     file = 'solutions/aep' + str(case) + '.p' 
     wr_list = [] 
-    N_turb = np.random.randint(2,101,N_max)
+    N_turb = np.random.randint(2,501,N_max)
     N_wr = np.random.randint(1,10,N_max)
 
     aep_flowers = np.zeros(N_max)
@@ -69,7 +69,7 @@ if case == 0:
 ###########################################################################
 if case == 1:
     # Analysis options
-    N_max = 100
+    N_max = 200
     N_turb = 50
     ws_avg = True
 
@@ -247,6 +247,7 @@ if case == 3:
     aep_gauss = np.zeros((len(conv_resolution),nx,ny))
 
     poly = Polygon(boundaries)
+    line = LineString(boundaries)
 
     for n in range(len(flowers_terms)):
         print('Resolution ' + str(n+1) + ' of ' + str(len(flowers_terms)))
@@ -281,7 +282,7 @@ if case == 3:
                 #     das
 
                 # Mask points outside of boundary or colliding with other turbines
-                if np.any(np.sqrt((X[idx] - np.delete(X,idx))**2 + (Y[idx] - np.delete(Y,idx))**2) <= 126.) or not pt.within(poly):
+                if np.any(np.sqrt((X[idx] - np.delete(X,idx))**2 + (Y[idx] - np.delete(Y,idx))**2) <= 126.) or not (pt.within(poly) or line.contains(pt)):
                     infeasible[i,j] = 1
 
     # Mask and normalize by highest AEP value
@@ -297,4 +298,9 @@ if case == 3:
     xx /= 126.
     yy /= 126.
 
-    pickle.dump((xx, yy, aep_flowers, aep_park, aep_gauss, flowers_terms, conv_resolution, wind_rose), open(file,'wb'))
+    X0 = np.delete(X0,idx) / 126.
+    Y0 = np.delete(Y0,idx) / 126.
+    boundaries = np.array(boundaries).T / 126.
+    boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)
+
+    pickle.dump((xx, yy, aep_flowers, aep_park, aep_gauss, flowers_terms, conv_resolution, wind_rose, X0, Y0, boundaries), open(file,'wb'))

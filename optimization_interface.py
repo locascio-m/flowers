@@ -139,7 +139,7 @@ class LayoutOptimizer():
     # pyOptSparse wrapper functions
     ###########################################################################
     def _optimize(self):
-        if hasattr(self, "_sens_func"):
+        if self.gradient:
             if self.timeLimit is not None:
                 self.sol = self.opt(self.optProb, storeHistory=self.storeHistory, sens=self._sens_func, timeLimit=self.timeLimit)
             else:
@@ -193,10 +193,14 @@ class FlowersOptimizer(LayoutOptimizer):
 
     """
 
-    def __init__(self, flowers_interface, layout_x, layout_y, boundaries, solver="SNOPT", timer=None, history_file='hist.hist', output_file='out.out'):
+    def __init__(self, flowers_interface, layout_x, layout_y, boundaries, grad="analytical", solver="SNOPT", timer=None, history_file='hist.hist', output_file='out.out'):
         self.model = flowers_interface
+        if grad == "analytical":
+            self.gradient = True
+        elif grad == "numerical":
+            self.gradient = False
         self._aep_initial, self._grad_initial = self.model.calculate_aep(gradient=True)
-        self._grad_initial = 1e-4*self._aep_initial # TODO: adjust gradient scaling
+        self._grad_initial = 1e-4*self._aep_initial # TODO: adjust gradient scaling 1e-4
         self._base_init_(layout_x, layout_y, boundaries, solver=solver, timer=timer, history_file=history_file, output_file=output_file)
 
     def _obj_func(self, varDict):
@@ -255,10 +259,10 @@ class ConventionalOptimizer(LayoutOptimizer):
 
     """
 
-    def __init__(self, floris_interface, freq_val, layout_x, layout_y, boundaries, solver="SNOPT", timer=None, history_file='hist.hist', output_file='out.out'):
+    def __init__(self, floris_interface, freq_val, layout_x, layout_y, boundaries, grad="analytical", solver="SNOPT", timer=None, history_file='hist.hist', output_file='out.out'):
         self.model = floris_interface
+        self.gradient = False
         self._freq_1D = freq_val
-
         self.model.calculate_wake()
         self._aep_initial = np.sum(self.model.get_farm_power() * self._freq_1D * 8760)
         self._base_init_(layout_x, layout_y, boundaries, solver=solver, timer=timer, history_file=history_file, output_file=output_file)

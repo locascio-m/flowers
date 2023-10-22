@@ -41,7 +41,7 @@ flow_field:
 wake:
   model_strings:
     combination_model: fls
-    deflection_model: jimenez
+    deflection_model: gauss
     turbulence_model: crespo_hernandez
     velocity_model: gauss
 

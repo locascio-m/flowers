@@ -265,7 +265,7 @@ class WPLOInterface():
         self.floris_interface.reinitialize(wind_directions=wr.wd,wind_speeds=wr.ws,layout_x=layout_x.flatten(),layout_y=layout_y.flatten(),time_series=True)
 
         # Initialize post-processing interface
-        self.post_processing = wfct.floris_interface.FlorisInterface("./input/park.yaml")
+        self.post_processing = wfct.floris_interface.FlorisInterface("./input/gauss.yaml")
         wind_rose = tl.resample_wind_speed(wind_rose, ws=np.arange(1.,26.,1.))
         wd_array = np.array(wind_rose["wd"].unique(), dtype=float)
         ws_array = np.array(wind_rose["ws"].unique(), dtype=float)
@@ -279,7 +279,7 @@ class WPLOInterface():
         self.post_processing.calculate_wake()
         self._aep_initial = np.sum(self.post_processing.get_farm_power() * self._freq_2D * 8760)
 
-    def run_optimization(self, optimizer, solver="SLSQP", timer=None, history='hist.hist', output='out.out'):
+    def run_optimization(self, optimizer, gradient="analytic", solver="SLSQP", timer=None, history='hist.hist', output='out.out'):
         """
         Run a Wind Plant Layout Optimization study with either the FLOWERS 
         or Conventional optimizer.
@@ -318,9 +318,9 @@ class WPLOInterface():
 
         # Instantiate optimizer class with user inputs
         if optimizer == "flowers":
-            prob = opt.FlowersOptimizer(self.flowers_interface, self._initial_x, self._initial_y, boundaries=self._boundaries, solver=solver, timer=timer, history_file=history, output_file=output)
+            prob = opt.FlowersOptimizer(self.flowers_interface, self._initial_x, self._initial_y, self._boundaries, grad=gradient, solver=solver, timer=timer, history_file=history, output_file=output)
         elif optimizer == "conventional":
-            prob = opt.ConventionalOptimizer(self.floris_interface, self._freq_1D, self._initial_x, self._initial_y, boundaries=self._boundaries, solver=solver, timer=timer, history_file=history, output_file=output)
+            prob = opt.ConventionalOptimizer(self.floris_interface, self._freq_1D, self._initial_x, self._initial_y, self._boundaries, grad=gradient, solver=solver, timer=timer, history_file=history, output_file=output)
 
         # Solve optimization problem
         print("Solving layout optimization problem.")
