@@ -1,7 +1,5 @@
 import model_interface as inter
 import tools as tl
-import floris
-import floris.tools as wfct
 import numpy as np
 import matplotlib.pyplot as plt
 
