@@ -1,11 +1,9 @@
 #!/bin/bash
 #SBATCH --account=windse
-#SBATCH --job-name=multi
-#SBATCH --time=2-00:00:00
+#SBATCH --job-name=floris
+#SBATCH --time=18:00:00
 #SBATCH --nodes=1
-##SBATCH --ntasks-per-node=8
-##SBATCH --partition=debug
-#SBATCH --output=output/multi.%a.out
+#SBATCH --output=output/flowers.%a.out
 #SBATCH --mail-user=michael.locascio@nrel.gov
 #SBATCH --mail-type=BEGIN,END,FAIL
 
@@ -27,7 +25,7 @@ else
 fi
 
 # Run our job
-srun --unbuffered -n 1 python ./multistart.py $SUB_ID > output/multi.$SUB_ID.log 2>&1
+srun --unbuffered -n 1 python ./opt_multistart.py conventional numerical $SUB_ID #> solutions/multi.$SUB_ID.log 2>&1
 
 # submit as follows
 # $ sbatch --array=0-100 array.sh

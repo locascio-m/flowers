@@ -20,7 +20,7 @@ boundaries = [(0., 0.),(12*126, 0.),(12*126, 6*126.),(6*126, 12*126.),(0, 12*126
 # boundaries = [(0., 0.),(10*126, 0.),(10*126, 10*126.),(0, 10*126.)]
 
 opt = inter.WPLOInterface(wr, layout_x, layout_y, boundaries)
-solution = opt.run_optimization(optimizer="conventional", solver="SNOPT", gradient="numerical", timer=60)
+solution = opt.run_optimization(optimizer="flowers", solver="SNOPT", gradient="analytical", timer=60)
 
 print(solution["init_aep"])
 print(solution["opt_aep"])
