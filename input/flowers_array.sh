@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=windse
 #SBATCH --job-name=flowers
-#SBATCH --time=18:00:00
+#SBATCH --time=4:00:00
 #SBATCH --nodes=1
 #SBATCH --output=output/flowers.%a.out
 #SBATCH --mail-user=michael.locascio@nrel.gov
@@ -28,4 +28,4 @@ fi
 srun --unbuffered -n 1 python ./opt_multistart.py flowers analytical $SUB_ID #> solutions/multi.$SUB_ID.log 2>&1
 
 # submit as follows
-# $ sbatch --array=0-100 array.sh
+# $ sbatch --array=0-49 input/flowers_array.sh

@@ -3,7 +3,7 @@
 #SBATCH --job-name=floris
 #SBATCH --time=18:00:00
 #SBATCH --nodes=1
-#SBATCH --output=output/flowers.%a.out
+#SBATCH --output=output/floris.%a.out
 #SBATCH --mail-user=michael.locascio@nrel.gov
 #SBATCH --mail-type=BEGIN,END,FAIL
 
@@ -28,4 +28,4 @@ fi
 srun --unbuffered -n 1 python ./opt_multistart.py conventional numerical $SUB_ID #> solutions/multi.$SUB_ID.log 2>&1
 
 # submit as follows
-# $ sbatch --array=0-100 array.sh
+# $ sbatch --array=0-49 input/conventional_array.sh

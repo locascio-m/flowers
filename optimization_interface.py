@@ -200,7 +200,7 @@ class FlowersOptimizer(LayoutOptimizer):
         elif grad == "numerical":
             self.gradient = False
         self._aep_initial, self._grad_initial = self.model.calculate_aep(gradient=True)
-        self._grad_initial = 1e-5*self._aep_initial
+        self._grad_initial = 1e-4*self._aep_initial
         self._base_init_(layout_x, layout_y, boundaries, solver=solver, timer=timer, history_file=history_file, output_file=output_file)
 
     def _obj_func(self, varDict):
