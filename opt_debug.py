@@ -5,10 +5,18 @@ import visualization as vis
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
 
-wr = tl.load_wind_rose(8)
-layout_x = 126. * np.array([0.,0.,-3.,7.,7.,7.,14.,14.,14.])
-layout_y = 126. * np.array([0.,7.,14.,0.,7.,14.,-2.,7.,14.])
-boundaries = [(0., 0.),(12*126, 0.),(12*126, 6*126.),(6*126, 12*126.),(0, 12*126.)]
+# wr = tl.load_wind_rose(8)
+# layout_x = 126. * np.array([0.,2.,4.,6.,8.,0.,2.,4.,6.,8.])
+# layout_y = 126. * np.array([0.,0.,0.,0.,0.,5.,5.,5.,5.,5.])
+# boundaries = [(0., 0.),(10*126, 0.),(10*126, 10*126.),(0., 10*126.)]
+
+# wr = tl.load_wind_rose(1)
+# boundaries = [(8*126., 0.),(28*126, 0.),(36*126, 24*126.),(24*126, 36*126.),(0, 36*126.)]
+# layout_x, layout_y = tl.random_layout(boundaries, n_turb=50, idx=30)
+
+wr = tl.load_wind_rose(6)
+boundaries = [(10.*126., 0.),(125*126., 0.),(125*126., 50*126.),(110*126., 160*126.),(40*126., 160*126.),(40*126., 120*126.),(0*126., 100*126.),(12.*126., 40*126.),(15.*126., 20.*126.)]
+layout_x, layout_y = tl.random_layout(boundaries, n_turb=250, idx=50)
 
 # wr = tl.load_wind_rose(1)
 # layout_x = 126. * np.array([0.,0.,1.,7.,7.,7.,14.,14.,14.,18.,18.,18.])
