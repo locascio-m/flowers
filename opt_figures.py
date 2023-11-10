@@ -18,6 +18,7 @@ figs = "multistart"
 color_neutral = 'goldenrod'
 color_flowers = 'dodgerblue'
 color_conventional = 'indianred'
+color_numerical = 'mediumpurple'
 
 if figs == "cases":
     # Farm definitions
@@ -365,6 +366,282 @@ if figs == "multistart":
         else:
             exit_codes[exit_code] = 1
     ax.bar(range(len(exit_codes)), list(exit_codes.values()), align='center',color=color_conventional,width=0.2)
+    ax.set(xlabel='SNOPT Exit Codes', ylabel='Count',xticks=range(len(exit_codes)), xticklabels=list(exit_codes.keys()))
+    fig.tight_layout()
+
+    plt.show()
+
+###########################################################################
+# FLOWERS FD GRADIENTS
+###########################################################################
+
+if figs == "gradients":
+    # Load files
+    N = 50
+    solutions_flowers = []
+    solutions_numerical = []
+    for n in range(N):
+        file_name = 'solutions/opt_flowers_analytical_' + str(n) + '.p'
+        solution, wr, boundaries = pickle.load(open(file_name,'rb'))
+        solutions_flowers.append(solution)
+
+        file_name = 'solutions/opt_flowers_numerical_' + str(n) + '.p'
+        solution, wr, boundaries = pickle.load(open(file_name,'rb'))
+        solutions_numerical.append(solution)
+
+    boundaries /= 126.
+    boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)
+
+    # Define outliers here after analyzing results
+    flowers_outliers = np.zeros(N)
+    flowers_outliers[[40]] = 1
+
+    numerical_outliers = np.zeros(N)
+    numerical_outliers[[25]] = 1
+
+    flowers_min_dist = np.zeros(N)
+    numerical_min_dist = np.zeros(N)
+
+    # fig, ax = plt.subplots(1,1)
+    # # aep_cmap = cm.get_cmap('winter')
+    # # nn = np.linspace(0.,1.,N,endpoint=True)
+    # for n in range(N):
+    #     solution = solutions_flowers[n]
+    #     ax.plot(range(solution['iter']),solution['hist_aep']/1e9,color=color_flowers,alpha=0.7)
+    # ax.set(xlabel='Iteration', ylabel='AEP [GWh]')
+    # fig.tight_layout()
+    # if save:
+    #     plt.savefig('./figures/opt_multistart_history.png', dpi=dpi)
+
+    # Superimposed layouts
+    fig, ax = plt.subplots(1,3,figsize=(11,4.5))
+    for n in range(N):
+        solution = solutions_flowers[n]
+        layout = []
+        for i in range(len(solution['init_x'])):
+            layout.append(plt.Circle((solution['init_x'][i]/126., solution['init_y'][i]/126.), 1/2))
+        layouts = coll.PatchCollection(layout, color=color_neutral, alpha=0.5)
+        ax[0].add_collection(layouts)
+    ax[0].plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+    ax[0].set(xlabel='x/D', ylabel='y/D', aspect='equal', title='Initial Layouts')
+    ax[0].grid(True)
+
+    for n in range(N):
+        solution = solutions_flowers[n]
+        layout = []
+
+        # # Calculate minimum distance
+        # xx = (solution['opt_x'] - np.reshape(solution['opt_x'],(-1,1)))/126.
+        # yy = (solution['opt_y'] - np.reshape(solution['opt_y'],(-1,1)))/126.
+        # dd = np.sqrt(xx**2 + yy**2)
+        # dd = np.ma.masked_where(np.eye(np.shape(xx)[0]),dd)
+        # flowers_min_dist[n] = np.min(dd)
+
+        if flowers_outliers[n] == 1:
+            continue
+
+        for i in range(len(solution['opt_x'])):
+            layout.append(plt.Circle((solution['opt_x'][i]/126., solution['opt_y'][i]/126.), 1/2))
+
+        layouts = coll.PatchCollection(layout, color=color_flowers, alpha=0.5)
+        ax[1].add_collection(layouts)
+    ax[1].plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+    ax[1].set(xlabel='x/D', ylabel='y/D', aspect='equal', title='FLOWERS AD Layouts')
+    ax[1].grid(True)
+
+    for n in range(N):
+        solution = solutions_numerical[n]
+        layout = []
+
+        # # Calculate minimum distance
+        # xx = (solution['opt_x'] - np.reshape(solution['opt_x'],(-1,1)))/126.
+        # yy = (solution['opt_y'] - np.reshape(solution['opt_y'],(-1,1)))/126.
+        # dd = np.sqrt(xx**2 + yy**2)
+        # dd = np.ma.masked_where(np.eye(np.shape(xx)[0]),dd)
+        # numerical_min_dist[n] = np.min(dd)
+
+        if numerical_outliers[n] == 1:
+            continue
+
+        for i in range(len(solution['opt_x'])):
+            layout.append(plt.Circle((solution['opt_x'][i]/126., solution['opt_y'][i]/126.), 1/2))
+
+        layouts = coll.PatchCollection(layout, color=color_numerical, alpha=0.5)
+        ax[2].add_collection(layouts)
+    ax[2].plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+    ax[2].set(xlabel='x/D', ylabel='y/D', aspect='equal', title='FLOWERS FD Layouts')
+    ax[2].grid(True)
+
+    fig.tight_layout()
+    if save:
+        plt.savefig('./figures/opt_gradients_layouts.png', dpi=dpi)
+
+    # print(np.where(flowers_min_dist < 1))
+    # print(np.where(numerical_min_dist < 1))
+
+    # Best cases
+    fig, ax = plt.subplots(1,2,figsize=(11,4.5))
+    nn = 9
+    solution = solutions_flowers[nn]
+    layout_init = []
+    layout_final = []
+    for i in range(len(solution['opt_x'])):
+        layout_init.append(plt.Circle((solution['init_x'][i]/126., solution['init_y'][i]/126.), 1/2))
+        layout_final.append(plt.Circle((solution['opt_x'][i]/126., solution['opt_y'][i]/126.), 1/2))
+
+    tmp0 = plt.Circle(([],[]),1/2,color=color_neutral,label='Initial Layout')
+    tmp1 = plt.Circle(([],[]),1/2,color=color_flowers,label='Optimal Layout')
+
+    layout0 = coll.PatchCollection(layout_init, color=color_neutral)
+    layout1 = coll.PatchCollection(layout_final, color=color_flowers)
+    ax[0].add_collection(layout0)
+    ax[0].add_collection(layout1)
+    ax[0].plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+    ax[0].set(xlabel='x/D', ylabel='y/D', aspect='equal',title='FLOWERS AD Best: {:.2f} GWh'.format(solution['opt_aep']/1e9))
+    ax[0].grid(True)
+
+    nn = 9
+    solution = solutions_numerical[nn]
+    layout_init = []
+    layout_final = []
+    for i in range(len(solution['opt_x'])):
+        layout_init.append(plt.Circle((solution['init_x'][i]/126., solution['init_y'][i]/126.), 1/2))
+        layout_final.append(plt.Circle((solution['opt_x'][i]/126., solution['opt_y'][i]/126.), 1/2))
+
+    tmp0 = plt.Circle(([],[]),1/2,color=color_neutral,label='Initial Layout')
+    tmp1 = plt.Circle(([],[]),1/2,color=color_numerical,label='Optimal Layout')
+
+    layout0 = coll.PatchCollection(layout_init, color=color_neutral)
+    layout1 = coll.PatchCollection(layout_final, color=color_numerical)
+    ax[1].add_collection(layout0)
+    ax[1].add_collection(layout1)
+    ax[1].plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+    ax[1].set(xlabel='x/D', ylabel='y/D', aspect='equal',title='FLOWERS FD Best: {:.2f} GWh'.format(solution['opt_aep']/1e9))
+    ax[1].grid(True)
+    # ax.legend(handles=[tmp0,tmp1],loc='upper right')
+    fig.tight_layout()
+    if save:
+        plt.savefig('./figures/opt_gradients_best.png', dpi=dpi)
+
+    # Collect statistics
+    initial_aep = np.zeros(N)
+    flowers_optimal_aep = np.zeros(N)
+    flowers_solver_time = np.zeros(N)
+    flowers_iterations = np.zeros(N)
+    numerical_optimal_aep = np.zeros(N)
+    numerical_solver_time = np.zeros(N)
+    numerical_iterations = np.zeros(N)
+    for n in range(N):
+        initial_aep[n] = solutions_flowers[n]['init_aep']
+        flowers_optimal_aep[n] = solutions_flowers[n]['opt_aep']
+        flowers_solver_time[n] = solutions_flowers[n]['total_time']
+        flowers_iterations[n] = solutions_flowers[n]['iter']
+        numerical_optimal_aep[n] = solutions_numerical[n]['opt_aep']
+        numerical_solver_time[n] = solutions_numerical[n]['total_time']
+        numerical_iterations[n] = solutions_numerical[n]['iter']
+
+    print("FLOWERS AD Aggregate Cost: {:.2f} core-hrs".format(np.sum(flowers_solver_time)/3600))
+    print("FLOWERS FD Aggregate Cost: {:.2f} core-hrs".format(np.sum(numerical_solver_time)/3600))
+
+    # Mask outliers
+    flowers_optimal_aep = np.ma.masked_where(flowers_outliers,flowers_optimal_aep)
+    # flowers_solver_time = np.ma.masked_where(flowers_outliers,flowers_solver_time)
+    # flowers_iterations = np.ma.masked_where(flowers_outliers,flowers_iterations)
+
+    numerical_optimal_aep = np.ma.masked_where(numerical_outliers,numerical_optimal_aep)
+    # conventional_solver_time = np.ma.masked_where(conventional_outliers,conventional_solver_time)
+    # conventional_iterations = np.ma.masked_where(conventional_outliers,conventional_iterations)
+
+    # AEP vs. Time
+    fig, ax = plt.subplots(1,1)
+
+    ax.scatter(flowers_solver_time/60,flowers_optimal_aep/1e9,20,color=color_flowers)
+    ax.scatter(numerical_solver_time/60,numerical_optimal_aep/1e9,20,color=color_numerical)
+
+    # ax.set(xscale='log')
+    plt.autoscale(False)
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    ax.hlines(np.median(flowers_optimal_aep)/1e9,xlim[0],xlim[1],colors=color_flowers,linestyles='--')
+    ax.vlines(np.median(flowers_solver_time)/60,ylim[0],ylim[1],colors=color_flowers,linestyles='--')
+    ax.hlines(np.median(numerical_optimal_aep)/1e9,xlim[0],xlim[1],colors=color_numerical,linestyles='--')
+    ax.vlines(np.median(numerical_solver_time)/60,ylim[0],ylim[1],colors=color_numerical,linestyles='--')
+    ax.set(xlabel='Solver Time [min]',ylabel='Optimal AEP [GWh]')
+    if save:
+        plt.savefig('./figures/opt_gradients_aepvstime.png', dpi=dpi)
+
+    # AEP vs. Iterations
+    fig, ax = plt.subplots(1,1)
+
+    ax.scatter(flowers_iterations,flowers_optimal_aep/1e9,20,color=color_flowers)
+    ax.scatter(numerical_iterations,numerical_optimal_aep/1e9,20,color=color_numerical)
+
+    plt.autoscale(False)
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    ax.hlines(np.median(flowers_optimal_aep)/1e9,xlim[0],xlim[1],colors=color_flowers,linestyles='--')
+    ax.vlines(np.median(flowers_iterations),ylim[0],ylim[1],colors=color_flowers,linestyles='--')
+    ax.hlines(np.median(numerical_optimal_aep)/1e9,xlim[0],xlim[1],colors=color_numerical,linestyles='--')
+    ax.vlines(np.median(numerical_iterations),ylim[0],ylim[1],colors=color_numerical,linestyles='--')
+    ax.set(xlabel='Iterations',ylabel='Optimal AEP [GWh]')
+    if save:
+        plt.savefig('./figures/opt_gradients_aepvsiter.png', dpi=dpi)
+
+    # AEP Gain per Study
+    fig, ax = plt.subplots(1,1,figsize=(11,4.5))
+    off_val = 0.175
+    mrk_sz = 8
+    for n in range(N):
+        if flowers_outliers[n] == 0:
+            solution = solutions_flowers[n]
+            ax.scatter(n-off_val,solution['init_aep']/1e9,mrk_sz,color=color_neutral, zorder=100)
+            ax.scatter(n-off_val,solution['opt_aep']/1e9,mrk_sz,color=color_flowers)
+            ax.vlines(n-off_val,solution['init_aep']/1e9,solution['opt_aep']/1e9,color=color_flowers,linewidth=2)
+
+        if numerical_outliers[n] == 0:
+            solution = solutions_numerical[n]
+            ax.scatter(n+off_val,solution['init_aep']/1e9,mrk_sz,color=color_neutral, zorder=100)
+            ax.scatter(n+off_val,solution['opt_aep']/1e9,mrk_sz,color=color_numerical)
+            ax.vlines(n+off_val,solution['init_aep']/1e9,solution['opt_aep']/1e9,color=color_numerical,linewidth=2)
+    ax.scatter([],[],20,color=color_neutral,label='Initial')
+    ax.scatter([],[],20,color=color_flowers,label='FLOWERS AD')
+    ax.scatter([],[],20,color=color_numerical,label='FLOWERS FD')
+    ax.set(xlabel='Index',ylabel='AEP [GWh]')
+    ax.legend()
+    fig.tight_layout()
+
+    if save:
+        plt.savefig('./figures/opt_gradients_aepgain.png', dpi=dpi)
+
+    # fig, ax = plt.subplots(1,1)
+    # for n in range(N):
+    #     solution = solutions_flowers[n]
+    #     ax.scatter(solution['iter'],solution['total_time'],20,color=color_flowers)
+    # ax.set(xlabel='Iterations',ylabel='Solver Time [s]')
+    # if save:
+    #     plt.savefig('./figures/opt_multistart_timevsiter.png', dpi=dpi)
+
+    fig, ax = plt.subplots(1,1,figsize=(13,3))
+    exit_codes = {}
+    for n in range(N):
+        exit_code = solutions_flowers[n]['exit_code']
+        if exit_code in exit_codes:
+            exit_codes[exit_code] += 1
+        else:
+            exit_codes[exit_code] = 1
+    ax.bar(range(len(exit_codes)), list(exit_codes.values()), align='center',color=color_flowers,width=0.2)
+    ax.set(xlabel='SNOPT Exit Codes', ylabel='Count',xticks=range(len(exit_codes)), xticklabels=list(exit_codes.keys()))
+    fig.tight_layout()
+
+    fig, ax = plt.subplots(1,1,figsize=(13,3))
+    exit_codes = {}
+    for n in range(N):
+        exit_code = solutions_numerical[n]['exit_code']
+        if exit_code in exit_codes:
+            exit_codes[exit_code] += 1
+        else:
+            exit_codes[exit_code] = 1
+    ax.bar(range(len(exit_codes)), list(exit_codes.values()), align='center',color=color_numerical,width=0.2)
     ax.set(xlabel='SNOPT Exit Codes', ylabel='Count',xticks=range(len(exit_codes)), xticklabels=list(exit_codes.keys()))
     fig.tight_layout()
 

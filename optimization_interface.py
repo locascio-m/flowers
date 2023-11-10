@@ -9,7 +9,7 @@ class LayoutOptimizer():
 
     """
 
-    def _base_init_(self, layout_x, layout_y, boundaries, solver="SNOPT", timer=None, options=None, history_file='hist.hist', output_file='out.out'):
+    def _base_init_(self, layout_x, layout_y, boundaries, solver="SNOPT", tol=1e-2, timer=None, options=None, history_file='hist.hist', output_file='out.out'):
 
         # Save boundary information
         self._boundaries = np.array(boundaries).T
@@ -27,8 +27,8 @@ class LayoutOptimizer():
         self._ymin = np.min(self._boundaries[1])
         self._ymax = np.max(self._boundaries[1])
 
-        self._x0 = self._norm(layout_x, self._xmin, self._xmax)
-        self._y0 = self._norm(layout_y, self._ymin, self._ymax)
+        self._x0 = layout_x
+        self._y0 = layout_y
         self._nturbs = len(layout_x)
 
         # Optimization initialization
@@ -48,11 +48,12 @@ class LayoutOptimizer():
             self.optOptions = {
                 "Print file": output_file,
                 "iSumm": 0,
-                "Major optimality tolerance": 1e-4,
+                "Major optimality tolerance": tol,
                 "Minor optimality tolerance": 1e-4,
                 "Major feasibility tolerance": 1e-4,
                 "Minor feasibility tolerance": 1e-4,
                 "Scale option": 0,
+                # "Verify level": 3,
                 }
         elif solver == "SLSQP":
             self.optOptions = {
@@ -130,10 +131,14 @@ class LayoutOptimizer():
                     Cy[i] = (self._boundaries[0,idx] - self._boundaries[0,(idx+1)%self._nbounds]) / self._boundary_len[idx]
         
         # Distance is negative if inside boundary for optimization problem 
+        # if gradient:
+        #     return self._norm(C, self._xmin, self._xmax), Cx, Cy
+        # else:
+        #     return self._norm(C, self._xmin, self._xmax)
         if gradient:
-            return self._norm(C, self._xmin, self._xmax), Cx, Cy
+            return C, Cx, Cy
         else:
-            return self._norm(C, self._xmin, self._xmax)
+            return C
 
     ###########################################################################
     # pyOptSparse wrapper functions
@@ -151,15 +156,19 @@ class LayoutOptimizer():
                 self.sol = self.opt(self.optProb, storeHistory=self.storeHistory, sens='FD')
 
     def parse_opt_vars(self, varDict):
-        self._x = self._unnorm(varDict["x"], self._xmin, self._xmax)
-        self._y = self._unnorm(varDict["y"], self._ymin, self._ymax)
+        # self._x = self._unnorm(varDict["x"], self._xmin, self._xmax)
+        # self._y = self._unnorm(varDict["y"], self._ymin, self._ymax)
+        self._x = varDict["x"]
+        self._y = varDict["y"]
 
     def parse_sol_vars(self, sol):
-        return np.array(self._unnorm(sol.getDVs()["x"], self._xmin, self._xmax)), np.array(self._unnorm(sol.getDVs()["y"], self._ymin, self._ymax))
+        # return np.array(self._unnorm(sol.getDVs()["x"], self._xmin, self._xmax)), np.array(self._unnorm(sol.getDVs()["y"], self._ymin, self._ymax))
+        return np.array(sol.getDVs()["x"]), np.array(sol.getDVs()["y"])
 
     def parse_hist_vars(self, hist):
         val = hist.getValues(names=['x','y'],major=True)
-        return np.array(self._unnorm(val['x'], self._xmin, self._xmax)), np.array(self._unnorm(val['y'], self._ymin, self._ymax))
+        # return np.array(self._unnorm(val['x'], self._xmin, self._xmax)), np.array(self._unnorm(val['y'], self._ymin, self._ymax))
+        return np.array(val['x']), np.array(val['y'])
 
     def add_var_group(self, optProb):
         optProb.addVarGroup("x", self._nturbs, type="c", value=self._x0)
@@ -193,15 +202,15 @@ class FlowersOptimizer(LayoutOptimizer):
 
     """
 
-    def __init__(self, flowers_interface, layout_x, layout_y, boundaries, grad="analytical", solver="SNOPT", timer=None, history_file='hist.hist', output_file='out.out'):
+    def __init__(self, flowers_interface, layout_x, layout_y, boundaries, grad="analytical", solver="SNOPT", scale=1e3, tol=1e-2, timer=None, history_file='hist.hist', output_file='out.out'):
         self.model = flowers_interface
         if grad == "analytical":
             self.gradient = True
         elif grad == "numerical":
             self.gradient = False
-        self._aep_initial, self._grad_initial = self.model.calculate_aep(gradient=True)
-        self._grad_initial = 1e-4*self._aep_initial
-        self._base_init_(layout_x, layout_y, boundaries, solver=solver, timer=timer, history_file=history_file, output_file=output_file)
+        aep_initial = self.model.calculate_aep(gradient=False)
+        self._scale = aep_initial / scale
+        self._base_init_(layout_x, layout_y, boundaries, solver=solver, tol=tol, timer=timer, history_file=history_file, output_file=output_file)
 
     def _obj_func(self, varDict):
         # Parse the variable dictionary
@@ -213,7 +222,7 @@ class FlowersOptimizer(LayoutOptimizer):
         # Compute the objective function
         funcs = {}
         funcs["obj"] = (
-            -1 * self.model.calculate_aep() / self._aep_initial
+            -1 * self.model.calculate_aep() / self._scale
         )
 
         # Compute constraints, if any are defined for the optimization
@@ -231,7 +240,7 @@ class FlowersOptimizer(LayoutOptimizer):
 
         _, tmp = self.model.calculate_aep(gradient=True)
         funcsSens = {}
-        funcsSens["obj"] = {"x": -tmp[:,0]/self._grad_initial, "y": -tmp[:,1]/self._grad_initial}
+        funcsSens["obj"] = {"x": -tmp[:,0]/self._scale, "y": -tmp[:,1]/self._scale}
         
         _, tmpx, tmpy = self._boundary_constraint(gradient=True)
         funcsSens["con"] = {"x": np.diag(tmpx), "y": np.diag(tmpy)}
@@ -259,12 +268,12 @@ class ConventionalOptimizer(LayoutOptimizer):
 
     """
 
-    def __init__(self, floris_interface, freq_val, layout_x, layout_y, boundaries, grad="analytical", solver="SNOPT", timer=None, history_file='hist.hist', output_file='out.out'):
+    def __init__(self, floris_interface, freq_val, layout_x, layout_y, boundaries, grad="analytical", solver="SNOPT", scale=1e3, tol=1e-2, timer=None, history_file='hist.hist', output_file='out.out'):
         self.model = floris_interface
         self.gradient = False
         self._freq_1D = freq_val
         self.model.calculate_wake()
-        self._aep_initial = np.sum(self.model.get_farm_power() * self._freq_1D * 8760)
+        self._scale = np.sum(self.model.get_farm_power() * self._freq_1D * 8760) / scale
         self._base_init_(layout_x, layout_y, boundaries, solver=solver, timer=timer, history_file=history_file, output_file=output_file)
 
     def _obj_func(self, varDict):
@@ -278,7 +287,7 @@ class ConventionalOptimizer(LayoutOptimizer):
         self.model.calculate_wake()
         funcs = {}
         funcs["obj"] = (
-            -1 * np.sum(self.model.get_farm_power() * self._freq_1D * 8760) / self._aep_initial
+            -1 * np.sum(self.model.get_farm_power() * self._freq_1D * 8760) / self._scale
         )
 
         # Compute constraints, if any are defined for the optimization

@@ -93,6 +93,7 @@ def plot_wind_rose(
         ax.set_theta_zero_location("N")
         ax.set_xticklabels(["N", "NE", "E", "SE", "S", "SW", "W", "NW"])
         ax.set_yticklabels([])
+        ax.set_axisbelow(True)
 
         return ax
 

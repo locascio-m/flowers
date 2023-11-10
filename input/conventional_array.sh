@@ -25,7 +25,7 @@ else
 fi
 
 # Run our job
-srun --unbuffered -n 1 python ./opt_multistart.py conventional numerical $SUB_ID #> solutions/multi.$SUB_ID.log 2>&1
+srun --unbuffered -n 1 python ./opt_multistart.py conventional numerical small $SUB_ID #> solutions/multi.$SUB_ID.log 2>&1
 
 # submit as follows
 # $ sbatch --array=0-49 input/conventional_array.sh

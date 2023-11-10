@@ -15,7 +15,7 @@ AEP models
 
 """
 
-case = 0
+case = 1
 
 
 ###########################################################################
@@ -70,7 +70,7 @@ if case == 0:
 if case == 1:
     # Analysis options
     N_max = 200
-    N_turb = 50
+    N_turb = 100
     ws_avg = True
 
     # Initialization
@@ -138,13 +138,13 @@ if case == 2:
     y_all = np.zeros((N+1,nt))
 
     # Define FLOWERS and Park models
-    model_high = inter.AEPInterface(wr, X, Y, conventional_model='park')
+    model_high = inter.AEPInterface(wr, X, Y, conventional_model='jensen')
     model_high.reinitialize(num_terms=flowers_terms[0], wd_resolution=conv_resolution[0], ws_avg=ws_avg)
 
-    model_med = inter.AEPInterface(wr, X, Y, conventional_model='park')
+    model_med = inter.AEPInterface(wr, X, Y, conventional_model='jensen')
     model_med.reinitialize(num_terms=flowers_terms[1], wd_resolution=conv_resolution[1], ws_avg=ws_avg)
 
-    model_low = inter.AEPInterface(wr, X, Y, conventional_model='park')
+    model_low = inter.AEPInterface(wr, X, Y, conventional_model='jensen')
     model_low.reinitialize(num_terms=flowers_terms[2], wd_resolution=conv_resolution[2], ws_avg=ws_avg)
 
     # Define Gauss models
@@ -215,16 +215,18 @@ if case == 2:
 ###########################################################################
 if case == 3:
     # Resolution options
-    flowers_terms = [180,90,60,45,36,30,25,20,15,10,5]
-    conv_resolution = [1,2,3,4,5,6,8,10,12,15,18]
+    # flowers_terms = [180,100,60,45,36,30,25,20,15,10,5]
+    # conv_resolution = [1,2,3,4,5,6,8,10,12,15,18]
+    flowers_terms = [100,20,10]
+    conv_resolution = [1,5,10]
 
     # Load layout, boundaries, and rose
     X0 = 126. * np.array([0.,0.,0.,7.,7.,7.,14.,14.,14.])
     Y0 = 126. * np.array([0.,7.,14.,0.,7.,14.,0.,7.,14.])
     idx = 4
     boundaries = [(0., 0.),(0, 14*126.),(14*126, 14*126.),(14*126, 0.)]
-    nx = 16*4+1
-    ny = 16*4+1
+    nx = 16*10+1
+    ny = 16*10+1
 
     wind_rose = tl.load_wind_rose(7)
 
@@ -235,7 +237,7 @@ if case == 3:
     ymin = np.min(Y0) - 126.
     ymax = np.max(Y0) + 126.
 
-    model = inter.AEPInterface(wind_rose, X0, Y0, conventional_model='park')
+    model = inter.AEPInterface(wind_rose, X0, Y0, conventional_model='jensen')
     gauss = inter.AEPInterface(wind_rose, X0, Y0, num_terms=3, conventional_model='gauss')
 
     xx = np.linspace(xmin,xmax,nx,endpoint=True)
@@ -264,8 +266,8 @@ if case == 3:
         for i in range(ny):
             print('y ' + str(i+1) + ' of ' + str(ny))
             for j in range(nx):
-                X[idx] = xx[i,j] + 1e-8
-                Y[idx] = yy[i,j] + 1e-8
+                X[idx] = xx[i,j]
+                Y[idx] = yy[i,j]
                 model.reinitialize(layout_x=X,layout_y=Y)
                 gauss.reinitialize(layout_x=X,layout_y=Y)
 
@@ -276,10 +278,6 @@ if case == 3:
                 aep_gauss[n,i,j] = gauss.compute_floris_aep(timer=False)
 
                 pt = Point(xx[i,j], yy[i,j])
-
-                # TODO: double-check Gauss NaN issue
-                # if np.isnan(aep_gauss[n,i,j]):
-                #     das
 
                 # Mask points outside of boundary or colliding with other turbines
                 if np.any(np.sqrt((X[idx] - np.delete(X,idx))**2 + (Y[idx] - np.delete(Y,idx))**2) <= 126.) or not (pt.within(poly) or line.contains(pt)):

@@ -123,33 +123,53 @@ class FlowersInterface():
                 3 * (1 + 2*self.k*R)**4)
 
         # Reshape variables for vectorized calculations
-        m = np.arange(1, len(self.fs.b))
-        a = np.swapaxes(np.tile(np.expand_dims(self.fs.a[1:], axis=(1,2)),np.shape(R.T)),0,2)
-        b = np.swapaxes(np.tile(np.expand_dims(self.fs.b[1:], axis=(1,2)),np.shape(R.T)),0,2)
-        R = np.tile(np.expand_dims(R, axis=2),len(m))
-        THETA = np.tile(np.expand_dims(THETA, axis=2),len(m))
-        theta_c = np.tile(np.expand_dims(theta_c, axis=2),len(m))
+        # m = np.arange(1, len(self.fs.b))
+        # a = np.swapaxes(np.tile(np.expand_dims(self.fs.a[1:], axis=(1,2)),np.shape(R.T)),0,2)
+        # b = np.swapaxes(np.tile(np.expand_dims(self.fs.b[1:], axis=(1,2)),np.shape(R.T)),0,2)
+        # R = np.tile(np.expand_dims(R, axis=2),len(m))
+        # THETA = np.tile(np.expand_dims(THETA, axis=2),len(m))
+        # theta_c = np.tile(np.expand_dims(theta_c, axis=2),len(m))
 
-        # Vectorized contribution of higher Fourier modes
-        du += np.sum((1 / (np.pi * m * (2 * self.k * R + 1)**2) * (
-            a * np.cos(2 * np.pi * m * THETA) + b * np.sin(2 * np.pi * m * THETA)) * (
+        # # Vectorized contribution of higher Fourier modes
+        # du += np.sum((1 / (np.pi * m * (2 * self.k * R + 1)**2) * (
+        #     a * np.cos(2 * np.pi * m * THETA) + b * np.sin(2 * np.pi * m * THETA)) * (
+        #         np.sin(2 * np.pi * m * theta_c) + 2 * self.k * R / (m**2 * (2 * self.k * R + 1)) * (
+        #             ((2 * np.pi * theta_c * m)**2 - 2) * np.sin(2 * np.pi * m * theta_c) + 4*np.pi*m*theta_c*np.cos(2 * np.pi * m * theta_c)))), axis=2)
+    
+        for m in np.arange(1,len(self.fs.b)):
+            du += (1 / (np.pi * m * (2 * self.k * R + 1)**2) * (
+            self.fs.a[m] * np.cos(2 * np.pi * m * THETA) + self.fs.b[m] * np.sin(2 * np.pi * m * THETA)) * (
                 np.sin(2 * np.pi * m * theta_c) + 2 * self.k * R / (m**2 * (2 * self.k * R + 1)) * (
-                    ((2 * np.pi * theta_c * m)**2 - 2) * np.sin(2 * np.pi * m * theta_c) + 4*np.pi*m*theta_c*np.cos(2 * np.pi * m * theta_c)))), axis=2)
+                    ((2 * np.pi * theta_c * m)**2 - 2) * np.sin(2 * np.pi * m * theta_c) + 4*np.pi*m*theta_c*np.cos(2 * np.pi * m * theta_c))))
 
         if gradient==True:
-            dtdr = np.tile(np.expand_dims(dtdr, axis=2),len(m))
-            
-            # Higher Fourier modes of change in power deficit wrt angle
-            dpdt = np.sum((2 / (2 * self.k * R + 1)**2 * (
-                b * np.cos(2 * np.pi * m * THETA) - a * np.sin(2 * np.pi * m * THETA)) * (
-                    np.sin(2 * np.pi * m * theta_c) + 2 * self.k * R / (m**2 * (2 * self.k * R + 1)) * (
-                        ((2 * np.pi * theta_c * m)**2 - 2) * np.sin(2 * np.pi * m * theta_c) + 4*np.pi*m*theta_c*np.cos(2 * np.pi * m * theta_c)))), axis=2)
+            dpdt = 0
+            for m in np.arange(1,len(self.fs.b)):
+                # Higher Fourier modes of change in power deficit wrt angle
+                dpdt += (2 / (2 * self.k * R + 1)**2 * (
+                    self.fs.b[m] * np.cos(2 * np.pi * m * THETA) - self.fs.a[m] * np.sin(2 * np.pi * m * THETA)) * (
+                        np.sin(2 * np.pi * m * theta_c) + 2 * self.k * R / (m**2 * (2 * self.k * R + 1)) * (
+                            ((2 * np.pi * theta_c * m)**2 - 2) * np.sin(2 * np.pi * m * theta_c) + 4*np.pi*m*theta_c*np.cos(2 * np.pi * m * theta_c))))
 
-            # Higher Fourier modes of change in power deficit wrt radius
-            dpdr += np.sum(((a * np.cos(2 * np.pi * m * THETA) + b * np.sin(2 * np.pi * m * THETA)) / (np.pi * m**3 * (2 * self.k * R + 1)**4) * (
-                -4 * self.k * np.sin(2 * np.pi * m * theta_c) * (1 + m**2 + 2 * self.k * R * (m**2 - 2) + 2 * np.pi**2 * m**2 * (4 * self.k * R - 1) * theta_c**2) + 
-                2 * np.pi * m * np.cos(2 * np.pi * m * theta_c) * (4 * self.k * (1 - 4 * self.k * R) * theta_c + m**2 * (2 * self.k * R + 1) * (
-                1 + 2 * self.k * R + 8 * np.pi**2 * self.k * R * theta_c**2) * dtdr))), axis=2)
+                # Higher Fourier modes of change in power deficit wrt radius
+                dpdr += ((self.fs.a[m] * np.cos(2 * np.pi * m * THETA) + self.fs.b[m] * np.sin(2 * np.pi * m * THETA)) / (np.pi * m**3 * (2 * self.k * R + 1)**4) * (
+                    -4 * self.k * np.sin(2 * np.pi * m * theta_c) * (1 + m**2 + 2 * self.k * R * (m**2 - 2) + 2 * np.pi**2 * m**2 * (4 * self.k * R - 1) * theta_c**2) + 
+                    2 * np.pi * m * np.cos(2 * np.pi * m * theta_c) * (4 * self.k * (1 - 4 * self.k * R) * theta_c + m**2 * (2 * self.k * R + 1) * (
+                    1 + 2 * self.k * R + 8 * np.pi**2 * self.k * R * theta_c**2) * dtdr)))
+
+            # dtdr = np.tile(np.expand_dims(dtdr, axis=2),len(m))
+            
+            # # Higher Fourier modes of change in power deficit wrt angle
+            # dpdt = np.sum((2 / (2 * self.k * R + 1)**2 * (
+            #     b * np.cos(2 * np.pi * m * THETA) - a * np.sin(2 * np.pi * m * THETA)) * (
+            #         np.sin(2 * np.pi * m * theta_c) + 2 * self.k * R / (m**2 * (2 * self.k * R + 1)) * (
+            #             ((2 * np.pi * theta_c * m)**2 - 2) * np.sin(2 * np.pi * m * theta_c) + 4*np.pi*m*theta_c*np.cos(2 * np.pi * m * theta_c)))), axis=2)
+
+            # # Higher Fourier modes of change in power deficit wrt radius
+            # dpdr += np.sum(((a * np.cos(2 * np.pi * m * THETA) + b * np.sin(2 * np.pi * m * THETA)) / (np.pi * m**3 * (2 * self.k * R + 1)**4) * (
+            #     -4 * self.k * np.sin(2 * np.pi * m * theta_c) * (1 + m**2 + 2 * self.k * R * (m**2 - 2) + 2 * np.pi**2 * m**2 * (4 * self.k * R - 1) * theta_c**2) + 
+            #     2 * np.pi * m * np.cos(2 * np.pi * m * theta_c) * (4 * self.k * (1 - 4 * self.k * R) * theta_c + m**2 * (2 * self.k * R + 1) * (
+            #     1 + 2 * self.k * R + 8 * np.pi**2 * self.k * R * theta_c**2) * dtdr))), axis=2)
             
         # Apply mask for points within rotor radius
         du = du * (1 - mask_area) + mask_val * mask_area
@@ -162,8 +182,10 @@ class FlowersInterface():
 
         # Complete gradient calculation
         if gradient==True:
-            dx = xx/np.sqrt(xx**2+yy**2)*dpdr + -yy/(2*np.pi*(xx**2+yy**2))*dpdt
-            dy = yy/np.sqrt(xx**2+yy**2)*dpdr + xx/(2*np.pi*(xx**2+yy**2))*dpdt
+            dx = xx/R*dpdr + -yy/(2*np.pi*R**2)*dpdt
+            dy = yy/R*dpdr + xx/(2*np.pi*R**2)*dpdt
+            # dx = xx/np.sqrt(xx**2+yy**2)*dpdr + -yy/(2*np.pi*(xx**2+yy**2))*dpdt
+            # dy = yy/np.sqrt(xx**2+yy**2)*dpdr + xx/(2*np.pi*(xx**2+yy**2))*dpdt
 
             dx = np.nan_to_num(dx)
             dy = np.nan_to_num(dy)

@@ -25,7 +25,7 @@ class AEPInterface():
         num_terms (int, optional): number of Fourier modes for the FLOWERS model
         k (float, optional): wake expansion rate in the FLOWERS model
         conventional_model (str, optional): underlying wake model:
-                - 'park' (default)
+                - 'jensen' (default)
                 - 'gauss'
         turbine (str, optional): turbine type:
                 - 'nrel_5MW' (default)
@@ -45,8 +45,8 @@ class AEPInterface():
         self.flowers_interface = flow.FlowersInterface(wind_rose, layout_x, layout_y, num_terms=num_terms, k=k, turbine=turbine)
 
         # Initialize FLORIS
-        if conventional_model is None or conventional_model == 'park':
-            self.floris_interface = wfct.floris_interface.FlorisInterface("./input/park.yaml")
+        if conventional_model is None or conventional_model == 'jensen':
+            self.floris_interface = wfct.floris_interface.FlorisInterface("./input/jensen.yaml")
         elif conventional_model == 'gauss':
             self.floris_interface = wfct.floris_interface.FlorisInterface("./input/gauss.yaml")
 
@@ -234,7 +234,7 @@ class WPLOInterface():
         num_terms (int, optional): number of Fourier modes for the FLOWERS model
         k (float, optional): wake expansion rate in the FLOWERS model
         conventional_model (str, optional): underlying wake model:
-                - 'park' (default)
+                - 'jensen' (default)
                 - 'gauss'
         turbine (str, optional): turbine type:
                 - 'nrel_5MW' (default)
@@ -250,8 +250,8 @@ class WPLOInterface():
 
         if conventional_model is None or conventional_model == 'gauss':
             self.floris_interface = wfct.floris_interface.FlorisInterface("./input/gauss.yaml")
-        elif conventional_model == 'park':
-            self.floris_interface = wfct.floris_interface.FlorisInterface("./input/park.yaml")
+        elif conventional_model == 'jensen':
+            self.floris_interface = wfct.floris_interface.FlorisInterface("./input/jensen.yaml")
 
         # Initialize FLOWERS interface
         self.flowers_interface = flow.FlowersInterface(wind_rose, layout_x, layout_y, num_terms=num_terms, k=k, turbine=turbine)
@@ -265,7 +265,7 @@ class WPLOInterface():
         self.floris_interface.reinitialize(wind_directions=wr.wd,wind_speeds=wr.ws,layout_x=layout_x.flatten(),layout_y=layout_y.flatten(),time_series=True)
 
         # Initialize post-processing interface
-        self.post_processing = wfct.floris_interface.FlorisInterface("./input/gauss.yaml")
+        self.post_processing = wfct.floris_interface.FlorisInterface("./input/post.yaml")
         wind_rose = tl.resample_wind_speed(wind_rose, ws=np.arange(1.,26.,1.))
         wd_array = np.array(wind_rose["wd"].unique(), dtype=float)
         ws_array = np.array(wind_rose["ws"].unique(), dtype=float)
@@ -279,7 +279,7 @@ class WPLOInterface():
         self.post_processing.calculate_wake()
         self._aep_initial = np.sum(self.post_processing.get_farm_power() * self._freq_2D * 8760)
 
-    def run_optimization(self, optimizer, gradient="analytic", solver="SLSQP", timer=None, history='hist.hist', output='out.out'):
+    def run_optimization(self, optimizer, gradient="analytic", solver="SNOPT", scale=1e3, tol=1e-2, timer=None, history='hist.hist', output='out.out'):
         """
         Run a Wind Plant Layout Optimization study with either the FLOWERS 
         or Conventional optimizer.
@@ -318,9 +318,34 @@ class WPLOInterface():
 
         # Instantiate optimizer class with user inputs
         if optimizer == "flowers":
-            prob = opt.FlowersOptimizer(self.flowers_interface, self._initial_x, self._initial_y, self._boundaries, grad=gradient, solver=solver, timer=timer, history_file=history, output_file=output)
+            prob = opt.FlowersOptimizer(
+                self.flowers_interface, 
+                self._initial_x, 
+                self._initial_y, 
+                self._boundaries, 
+                grad=gradient, 
+                solver=solver, 
+                scale=scale, 
+                tol=tol, 
+                timer=timer, 
+                history_file=history, 
+                output_file=output
+            )
         elif optimizer == "conventional":
-            prob = opt.ConventionalOptimizer(self.floris_interface, self._freq_1D, self._initial_x, self._initial_y, self._boundaries, grad=gradient, solver=solver, timer=timer, history_file=history, output_file=output)
+            prob = opt.ConventionalOptimizer(
+                self.floris_interface, 
+                self._freq_1D, 
+                self._initial_x, 
+                self._initial_y, 
+                self._boundaries, 
+                grad=gradient, 
+                solver=solver, 
+                scale=scale, 
+                tol=tol, 
+                timer=timer, 
+                history_file=history, 
+                output_file=output
+            )
 
         # Solve optimization problem
         print("Solving layout optimization problem.")
@@ -349,10 +374,10 @@ class WPLOInterface():
         # Post process AEP
         hist_aep = np.zeros(len(self.solution["hist_x"]))
         hist_aep[0] = self._aep_initial
-        for n in np.arange(1,self.solution["iter"]-1):
-            self.post_processing.reinitialize(layout_x=self.solution["hist_x"][n].flatten(),layout_y=self.solution["hist_y"][n].flatten())
-            self.post_processing.calculate_wake()
-            hist_aep[n] = np.sum(self.post_processing.get_farm_power() * self._freq_2D * 8760)
+        # for n in np.arange(1,self.solution["iter"]-1):
+        #     self.post_processing.reinitialize(layout_x=self.solution["hist_x"][n].flatten(),layout_y=self.solution["hist_y"][n].flatten())
+        #     self.post_processing.calculate_wake()
+        #     hist_aep[n] = np.sum(self.post_processing.get_farm_power() * self._freq_2D * 8760)
 
         self.post_processing.reinitialize(layout_x=self.solution["opt_x"].flatten(),layout_y=self.solution["opt_y"].flatten())
         self.post_processing.calculate_wake()
