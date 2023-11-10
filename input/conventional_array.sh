@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=windse
 #SBATCH --job-name=floris
-#SBATCH --time=18:00:00
+#SBATCH --time=1-00:30:00
 #SBATCH --nodes=1
 #SBATCH --output=output/floris.%a.out
 #SBATCH --mail-user=michael.locascio@nrel.gov
