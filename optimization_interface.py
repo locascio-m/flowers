@@ -281,7 +281,7 @@ class ConventionalOptimizer(LayoutOptimizer):
         self.parse_opt_vars(varDict)
 
         # Update turbine map with turbince locations
-        self.model.reinitialize(layout_x=self._x.flatten(), layout_y=self._y.flatten())
+        self.model.reinitialize(layout_x=self._x.flatten(), layout_y=self._y.flatten(), time_series=True)
 
         # Compute the objective function
         self.model.calculate_wake()
