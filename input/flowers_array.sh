@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=windse
-#SBATCH --job-name=flowers
+#SBATCH --job-name=flowers_small
 #SBATCH --time=1-00:30:00
 #SBATCH --nodes=1
 #SBATCH --output=output/flowers.%a.out
@@ -28,4 +28,4 @@ fi
 srun --unbuffered -n 1 python ./opt_multistart.py flowers analytical small $SUB_ID #> solutions/multi.$SUB_ID.log 2>&1
 
 # submit as follows
-# $ sbatch --array=0-49 input/flowers_array.sh
+# $ sbatch --array=0-99 input/flowers_array.sh
