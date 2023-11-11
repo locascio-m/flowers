@@ -1,9 +1,9 @@
 import pickle
 import tools
 
-# farm = "small"
+farm = "small"
 # farm = "medium"
-farm = "large"
+# farm = "large"
 
 if farm == "small":
     boundaries = [(0., 0.),(10*126, 0.),(10*126, 10*126.),(0., 10*126.)]

@@ -47,8 +47,8 @@ def random_layout(boundaries=[], n_turb=0, D=126.0, min_dist=2.0, idx=None):
     if idx != None:
         np.random.seed(idx)
 
-    xx = np.zeros(n_turb)
-    yy = np.zeros(n_turb)
+    xx = -1000*np.ones(n_turb)
+    yy = -1000*np.ones(n_turb)
 
     xmin = np.min([tup[0] for tup in boundaries])
     xmax = np.max([tup[0] for tup in boundaries])

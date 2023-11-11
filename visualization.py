@@ -76,6 +76,7 @@ def plot_wind_rose(
                         width=0.9 * np.radians(wd_step),
                         color=color_array(ws_idx),
                         edgecolor="k",
+                        label=ws_labels[ws_idx],
                     )
                 )
             # break

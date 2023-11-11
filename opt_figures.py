@@ -13,7 +13,13 @@ from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
 
 save = False
 dpi = 500
-figs = "multistart"
+
+figs = "cases"
+# figs = "multistart"
+
+farm = "small"
+# farm = "medium"
+# farm = "large"
 
 color_neutral = 'goldenrod'
 color_flowers = 'dodgerblue'
@@ -22,7 +28,7 @@ color_numerical = 'mediumpurple'
 
 if figs == "cases":
     # Farm definitions
-    fig = plt.figure(figsize=(11,7))
+    fig = plt.figure(figsize=(11,9))
     ax0 = fig.add_subplot(2,3,1)
     ax1 = fig.add_subplot(2,3,2)
     ax2 = fig.add_subplot(2,3,3)
@@ -33,10 +39,11 @@ if figs == "cases":
 
     # Small farm
     wr = tl.load_wind_rose(8)
-    boundaries = [(0., 0.),(10, 0.),(10, 10),(0., 10)]
-    xx, yy = tl.random_layout(boundaries, n_turb=10, idx=100, D=1)
+    xx, yy, boundaries = tl.load_layout(10, "small")
+    xx /= 126.
+    yy /= 126.
     boundaries = np.array(boundaries).T
-    boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)
+    boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)/126.
 
     layout = []
     for i in range(len(xx)):
@@ -53,10 +60,11 @@ if figs == "cases":
 
     # Medium farm
     wr = tl.load_wind_rose(1)
-    boundaries = [(8, 0.),(28, 0.),(36, 24),(24, 36),(0, 36)]
-    xx, yy = tl.random_layout(boundaries, n_turb=50, idx=99, D=1)
+    xx, yy, boundaries = tl.load_layout(16, "medium")
+    xx /= 126.
+    yy /= 126.
     boundaries = np.array(boundaries).T
-    boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)
+    boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)/126.
     layout = []
     for i in range(len(xx)):
         layout.append(plt.Circle((xx[i], yy[i]), 1/2))
@@ -72,10 +80,11 @@ if figs == "cases":
 
     # Large farm
     wr = tl.load_wind_rose(6)
-    boundaries = [(10, 0.),(125, 0.),(125, 50),(110, 160),(40., 160),(40, 120),(0, 100),(12, 40),(15, 20)]
-    xx, yy = tl.random_layout(boundaries, n_turb=250, idx=100, D=1)
+    xx, yy, boundaries = tl.load_layout(70, "large")
+    xx /= 126.
+    yy /= 126.
     boundaries = np.array(boundaries).T
-    boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)
+    boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)/126.
     layout = []
     for i in range(len(xx)):
         layout.append(plt.Circle((xx[i], yy[i]), 1/2))
@@ -87,11 +96,31 @@ if figs == "cases":
     ax[0][2].grid(True)
 
     vis.plot_wind_rose(wr, ax=ax[1][2])
+    h, l = ax[1][2].get_legend_handles_labels()
+    h = h[:5]
+    l = l[:5]
     ax[1][2].get_legend().remove()
 
+    # fig.tight_layout(rect=[0.,0.04,0.,1])
     fig.tight_layout()
+    fig.subplots_adjust(bottom=0.05)
+    fig.legend(reversed(h), l, ncol=5,loc='lower center')
     if save:
         plt.savefig('./figures/opt_multistart_setup.png', dpi=dpi)
+
+    # fig, ax = plt.subplots(1,1)
+    # for n in range(100):
+    #     init_x, init_y, boundaries = tl.load_layout(n, "large")
+    #     boundaries = np.array(boundaries).T
+    #     boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)/126.
+    #     layout = []
+    #     for i in range(len(init_x)):
+    #         layout.append(plt.Circle((init_x[i]/126., init_y[i]/126.), 1/2))
+    #     layouts = coll.PatchCollection(layout, color=color_neutral, alpha=0.5)
+    #     ax.add_collection(layouts)
+    # ax.plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+    # ax.set(xlabel='x/D', ylabel='y/D', aspect='equal', title='Initial Layouts')
+    # ax.grid(True)
 
     plt.show()
 
@@ -100,16 +129,21 @@ if figs == "cases":
 ###########################################################################
 
 if figs == "multistart":
+
     # Load files
-    N = 50
+    N = 100
+
     solutions_flowers = []
     solutions_conventional = []
+
+    file_base = 'solutions/opt_' + farm
+
     for n in range(N):
-        file_name = 'solutions/opt_flowers_analytical_' + str(n) + '.p'
+        file_name = file_base + '_flowers_analytical_' + str(n) + '.p'
         solution, wr, boundaries = pickle.load(open(file_name,'rb'))
         solutions_flowers.append(solution)
 
-        file_name = 'solutions/opt_conventional_numerical_' + str(n) + '.p'
+        file_name = file_base + '_conventional_numerical_' + str(n) + '.p'
         solution, wr, boundaries = pickle.load(open(file_name,'rb'))
         solutions_conventional.append(solution)
 
@@ -118,24 +152,63 @@ if figs == "multistart":
 
     # Define outliers here after analyzing results
     flowers_outliers = np.zeros(N)
-    flowers_outliers[[40]] = 1
+    # flowers_outliers[[40]] = 1
 
     conventional_outliers = np.zeros(N)
-    conventional_outliers[[3,21,25,36]] = 1
+    conventional_outliers[[28,72]] = 1
 
     flowers_min_dist = np.zeros(N)
     conventional_min_dist = np.zeros(N)
 
-    # fig, ax = plt.subplots(1,1)
-    # # aep_cmap = cm.get_cmap('winter')
-    # # nn = np.linspace(0.,1.,N,endpoint=True)
-    # for n in range(N):
-    #     solution = solutions_flowers[n]
-    #     ax.plot(range(solution['iter']),solution['hist_aep']/1e9,color=color_flowers,alpha=0.7)
-    # ax.set(xlabel='Iteration', ylabel='AEP [GWh]')
-    # fig.tight_layout()
-    # if save:
-    #     plt.savefig('./figures/opt_multistart_history.png', dpi=dpi)
+    # Collect statistics
+    initial_aep = np.zeros(N)
+    flowers_optimal_aep = np.zeros(N)
+    flowers_solver_time = np.zeros(N)
+    flowers_iterations = np.zeros(N)
+    flowers_exit_codes = {}
+    conventional_optimal_aep = np.zeros(N)
+    conventional_solver_time = np.zeros(N)
+    conventional_iterations = np.zeros(N)
+    conventional_exit_codes = {}
+
+    for n in range(N):
+        initial_aep[n] = solutions_flowers[n]['init_aep']
+        flowers_optimal_aep[n] = solutions_flowers[n]['opt_aep']
+        flowers_solver_time[n] = solutions_flowers[n]['total_time']
+        flowers_iterations[n] = solutions_flowers[n]['iter']
+        conventional_optimal_aep[n] = solutions_conventional[n]['opt_aep']
+        conventional_solver_time[n] = solutions_conventional[n]['total_time']
+        conventional_iterations[n] = solutions_conventional[n]['iter']
+
+        exit_code = solutions_flowers[n]['exit_code']
+        if exit_code in flowers_exit_codes:
+            flowers_exit_codes[exit_code] += 1
+        else:
+            flowers_exit_codes[exit_code] = 1
+        
+        exit_code = solutions_conventional[n]['exit_code']
+        if exit_code in conventional_exit_codes:
+            conventional_exit_codes[exit_code] += 1
+        else:
+            conventional_exit_codes[exit_code] = 1
+    
+    # print(np.argmax(flowers_optimal_aep))
+    # print(np.argmax(conventional_optimal_aep))
+
+    print("FLOWERS Aggregate Cost: {:.2f} core-hrs".format(np.sum(flowers_solver_time)/3600))
+    print("Conventional Aggregate Cost: {:.2f} core-hrs".format(np.sum(conventional_solver_time)/3600))
+    print("Speed-Up: {:.2f}x".format(np.sum(conventional_solver_time)/np.sum(flowers_solver_time)))
+
+    # Exit codes
+    fig, ax = plt.subplots(1,1,figsize=(13,3))
+    ax.bar(range(len(flowers_exit_codes)), list(flowers_exit_codes.values()), align='center',color=color_flowers,width=0.2)
+    ax.set(xlabel='SNOPT Exit Codes', ylabel='Count',xticks=range(len(flowers_exit_codes)), xticklabels=list(flowers_exit_codes.keys()))
+    fig.tight_layout()
+
+    fig, ax = plt.subplots(1,1,figsize=(13,3))
+    ax.bar(range(len(conventional_exit_codes)), list(conventional_exit_codes.values()), align='center',color=color_conventional,width=0.2)
+    ax.set(xlabel='SNOPT Exit Codes', ylabel='Count',xticks=range(len(conventional_exit_codes)), xticklabels=list(conventional_exit_codes.keys()))
+    fig.tight_layout()
 
     # Superimposed layouts
     fig, ax = plt.subplots(1,3,figsize=(11,4.5))
@@ -200,12 +273,13 @@ if figs == "multistart":
     if save:
         plt.savefig('./figures/opt_multistart_layouts.png', dpi=dpi)
 
+    # Print infeasible solutions
     # print(np.where(flowers_min_dist < 1))
     # print(np.where(conventional_min_dist < 1))
 
     # Best cases
     fig, ax = plt.subplots(1,2,figsize=(11,4.5))
-    nn = 9
+    nn = 8
     solution = solutions_flowers[nn]
     layout_init = []
     layout_final = []
@@ -224,7 +298,7 @@ if figs == "multistart":
     ax[0].set(xlabel='x/D', ylabel='y/D', aspect='equal',title='FLOWERS Best: {:.2f} GWh'.format(solution['opt_aep']/1e9))
     ax[0].grid(True)
 
-    nn = 6
+    nn = 16
     solution = solutions_conventional[nn]
     layout_init = []
     layout_final = []
@@ -247,86 +321,58 @@ if figs == "multistart":
     if save:
         plt.savefig('./figures/opt_multistart_best.png', dpi=dpi)
 
-    # Collect statistics
-    initial_aep = np.zeros(N)
-    flowers_optimal_aep = np.zeros(N)
-    flowers_solver_time = np.zeros(N)
-    flowers_iterations = np.zeros(N)
-    conventional_optimal_aep = np.zeros(N)
-    conventional_solver_time = np.zeros(N)
-    conventional_iterations = np.zeros(N)
-    for n in range(N):
-        initial_aep[n] = solutions_flowers[n]['init_aep']
-        flowers_optimal_aep[n] = solutions_flowers[n]['opt_aep']
-        flowers_solver_time[n] = solutions_flowers[n]['total_time']
-        flowers_iterations[n] = solutions_flowers[n]['iter']
-        conventional_optimal_aep[n] = solutions_conventional[n]['opt_aep']
-        conventional_solver_time[n] = solutions_conventional[n]['total_time']
-        conventional_iterations[n] = solutions_conventional[n]['iter']
-    
-    print("FLOWERS Aggregate Cost: {:.2f} core-hrs".format(np.sum(flowers_solver_time)/3600))
-    print("Conventional Aggregate Cost: {:.2f} core-hrs".format(np.sum(conventional_solver_time)/3600))
-
     # Mask outliers
     flowers_optimal_aep = np.ma.masked_where(flowers_outliers,flowers_optimal_aep)
-    # flowers_solver_time = np.ma.masked_where(flowers_outliers,flowers_solver_time)
-    # flowers_iterations = np.ma.masked_where(flowers_outliers,flowers_iterations)
-
     conventional_optimal_aep = np.ma.masked_where(conventional_outliers,conventional_optimal_aep)
-    # conventional_solver_time = np.ma.masked_where(conventional_outliers,conventional_solver_time)
-    # conventional_iterations = np.ma.masked_where(conventional_outliers,conventional_iterations)
 
     # AEP vs. Time
     fig, ax = plt.subplots(1,1)
-
-    ax.scatter(flowers_solver_time/3600,flowers_optimal_aep/1e9,20,color=color_flowers)
-    ax.scatter(conventional_solver_time/3600,conventional_optimal_aep/1e9,20,color=color_conventional)
-
-    ax.set(xscale='log')
-    plt.autoscale(False)
+    ax.scatter(flowers_solver_time/60,flowers_optimal_aep/1e9,20,alpha=0.75,color=color_flowers,label='FLOWERS')
+    ax.scatter(conventional_solver_time/60,conventional_optimal_aep/1e9,20,alpha=0.75,color=color_conventional,label='Conventional')
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
     ax.hlines(np.median(flowers_optimal_aep)/1e9,xlim[0],xlim[1],colors=color_flowers,linestyles='--')
-    ax.vlines(np.median(flowers_solver_time)/3600,ylim[0],ylim[1],colors=color_flowers,linestyles='--')
+    ax.vlines(np.median(flowers_solver_time)/60,ylim[0],ylim[1],colors=color_flowers,linestyles='--')
     ax.hlines(np.median(conventional_optimal_aep)/1e9,xlim[0],xlim[1],colors=color_conventional,linestyles='--')
-    ax.vlines(np.median(conventional_solver_time)/3600,ylim[0],ylim[1],colors=color_conventional,linestyles='--')
-    ax.set(xlabel='Solver Time [hr]',ylabel='Optimal AEP [GWh]')
+    ax.vlines(np.median(conventional_solver_time)/60,ylim[0],ylim[1],colors=color_conventional,linestyles='--')
+    ax.set(xlabel='Solver Time [min]',ylabel='Optimal AEP [GWh]',xlim=xlim,ylim=ylim)
+    ax.grid(linestyle=':')
+    ax.set_axisbelow(True)
+    ax.legend()
     if save:
         plt.savefig('./figures/opt_multistart_aepvstime.png', dpi=dpi)
 
     # AEP vs. Iterations
     fig, ax = plt.subplots(1,1)
-
-    ax.scatter(flowers_iterations,flowers_optimal_aep/1e9,20,color=color_flowers)
-    ax.scatter(conventional_iterations,conventional_optimal_aep/1e9,20,color=color_conventional)
-
-    plt.autoscale(False)
+    ax.scatter(flowers_iterations,flowers_optimal_aep/1e9,20,alpha=0.75,color=color_flowers)
+    ax.scatter(conventional_iterations,conventional_optimal_aep/1e9,20,alpha=0.75,color=color_conventional)
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
     ax.hlines(np.median(flowers_optimal_aep)/1e9,xlim[0],xlim[1],colors=color_flowers,linestyles='--')
     ax.vlines(np.median(flowers_iterations),ylim[0],ylim[1],colors=color_flowers,linestyles='--')
     ax.hlines(np.median(conventional_optimal_aep)/1e9,xlim[0],xlim[1],colors=color_conventional,linestyles='--')
     ax.vlines(np.median(conventional_iterations),ylim[0],ylim[1],colors=color_conventional,linestyles='--')
-    ax.set(xlabel='Iterations',ylabel='Optimal AEP [GWh]')
+    ax.set(xlabel='Iterations',ylabel='Optimal AEP [GWh]',xlim=xlim,ylim=ylim)
+    ax.grid(linestyle=':')
+    ax.set_axisbelow(True)
     if save:
         plt.savefig('./figures/opt_multistart_aepvsiter.png', dpi=dpi)
 
     # AEP Gain per Study
     fig, ax = plt.subplots(1,1,figsize=(11,4.5))
-    off_val = 0.175
-    mrk_sz = 8
+    off_val = 0.15
+    mrk_sz = 2
+    line_width = 1.5
     for n in range(N):
         if flowers_outliers[n] == 0:
-            solution = solutions_flowers[n]
-            ax.scatter(n-off_val,solution['init_aep']/1e9,mrk_sz,color=color_neutral, zorder=100)
-            ax.scatter(n-off_val,solution['opt_aep']/1e9,mrk_sz,color=color_flowers)
-            ax.vlines(n-off_val,solution['init_aep']/1e9,solution['opt_aep']/1e9,color=color_flowers,linewidth=2)
+            ax.scatter(n-off_val,initial_aep[n]/1e9,mrk_sz,color=color_neutral, zorder=100)
+            ax.scatter(n-off_val,flowers_optimal_aep[n]/1e9,mrk_sz,color=color_flowers)
+            ax.vlines(n-off_val,initial_aep[n]/1e9,flowers_optimal_aep[n]/1e9,color=color_flowers,linewidth=line_width)
 
         if conventional_outliers[n] == 0:
-            solution = solutions_conventional[n]
-            ax.scatter(n+off_val,solution['init_aep']/1e9,mrk_sz,color=color_neutral, zorder=100)
-            ax.scatter(n+off_val,solution['opt_aep']/1e9,mrk_sz,color=color_conventional)
-            ax.vlines(n+off_val,solution['init_aep']/1e9,solution['opt_aep']/1e9,color=color_conventional,linewidth=2)
+            ax.scatter(n+off_val,initial_aep[n]/1e9,mrk_sz,color=color_neutral, zorder=100)
+            ax.scatter(n+off_val,conventional_optimal_aep[n]/1e9,mrk_sz,color=color_conventional)
+            ax.vlines(n+off_val,initial_aep[n]/1e9,conventional_optimal_aep[n]/1e9,color=color_conventional,linewidth=line_width)
     ax.scatter([],[],20,color=color_neutral,label='Initial')
     ax.scatter([],[],20,color=color_flowers,label='FLOWERS')
     ax.scatter([],[],20,color=color_conventional,label='Conventional')
@@ -336,38 +382,6 @@ if figs == "multistart":
 
     if save:
         plt.savefig('./figures/opt_multistart_aepgain.png', dpi=dpi)
-
-    # fig, ax = plt.subplots(1,1)
-    # for n in range(N):
-    #     solution = solutions_flowers[n]
-    #     ax.scatter(solution['iter'],solution['total_time'],20,color=color_flowers)
-    # ax.set(xlabel='Iterations',ylabel='Solver Time [s]')
-    # if save:
-    #     plt.savefig('./figures/opt_multistart_timevsiter.png', dpi=dpi)
-
-    fig, ax = plt.subplots(1,1,figsize=(13,3))
-    exit_codes = {}
-    for n in range(N):
-        exit_code = solutions_flowers[n]['exit_code']
-        if exit_code in exit_codes:
-            exit_codes[exit_code] += 1
-        else:
-            exit_codes[exit_code] = 1
-    ax.bar(range(len(exit_codes)), list(exit_codes.values()), align='center',color=color_flowers,width=0.2)
-    ax.set(xlabel='SNOPT Exit Codes', ylabel='Count',xticks=range(len(exit_codes)), xticklabels=list(exit_codes.keys()))
-    fig.tight_layout()
-
-    fig, ax = plt.subplots(1,1,figsize=(13,3))
-    exit_codes = {}
-    for n in range(N):
-        exit_code = solutions_conventional[n]['exit_code']
-        if exit_code in exit_codes:
-            exit_codes[exit_code] += 1
-        else:
-            exit_codes[exit_code] = 1
-    ax.bar(range(len(exit_codes)), list(exit_codes.values()), align='center',color=color_conventional,width=0.2)
-    ax.set(xlabel='SNOPT Exit Codes', ylabel='Count',xticks=range(len(exit_codes)), xticklabels=list(exit_codes.keys()))
-    fig.tight_layout()
 
     plt.show()
 
