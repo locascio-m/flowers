@@ -11,8 +11,11 @@ gradients = str(sys.argv[2])
 
 if farm == "small":
     wr = tl.load_wind_rose(8)
-    scale = 1e3
-    tol = 1e-2
+    if model == "flowers":
+        scale = 1e2
+    elif model == "conventional":
+        scale = 1e3
+    tol = 1e-3
 elif farm == "medium":
     wr = tl.load_wind_rose(1)
     scale = 1e3
