@@ -18,6 +18,10 @@ if farm == "small":
     tol = 1e-3
 elif farm == "medium":
     wr = tl.load_wind_rose(1)
+    if model == "flowers":
+        scale = 1e2
+    elif model == "conventional":
+        scale = 1e3
     scale = 1e3
     tol = 1e-2
 elif farm == "large":
