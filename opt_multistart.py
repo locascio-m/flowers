@@ -22,8 +22,7 @@ elif farm == "medium":
         scale = 1e2
     elif model == "conventional":
         scale = 1e3
-    scale = 1e3
-    tol = 1e-2
+    tol = 1e-3
 elif farm == "large":
     wr = tl.load_wind_rose(6)
     scale = 1e3
