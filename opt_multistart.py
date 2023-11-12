@@ -25,8 +25,11 @@ elif farm == "medium":
     tol = 1e-3
 elif farm == "large":
     wr = tl.load_wind_rose(6)
-    scale = 1e3
-    tol = 1e-2
+    if model == "flowers":
+        scale = 1e3
+    elif model == "conventional":
+        scale = 1e4
+    tol = 1e-3
 
 layout_x, layout_y, boundaries = tl.load_layout(idx, farm)
 
