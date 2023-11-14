@@ -33,7 +33,7 @@ class LayoutOptimizer():
 
         # Optimization initialization
         self.solver = solver
-        self.storeHistory = history_file
+        # self.storeHistory = history_file
         self.timeLimit = timer
         self.optProb = pyoptsparse.Optimization('layout', self._obj_func)
 
@@ -46,8 +46,10 @@ class LayoutOptimizer():
             self.optOptions = options
         elif solver == "SNOPT":
             self.optOptions = {
-                "Print file": output_file,
-                "iSumm": 0,
+                # "Print file": output_file,
+                "Summary file": output_file,
+                "iPrint": 0,
+                # "iSumm": 0,
                 "Major optimality tolerance": tol,
                 "Minor optimality tolerance": 1e-4,
                 "Major feasibility tolerance": 1e-4,
@@ -146,14 +148,14 @@ class LayoutOptimizer():
     def _optimize(self):
         if self.gradient:
             if self.timeLimit is not None:
-                self.sol = self.opt(self.optProb, storeHistory=self.storeHistory, sens=self._sens_func, timeLimit=self.timeLimit)
+                self.sol = self.opt(self.optProb, sens=self._sens_func, timeLimit=self.timeLimit) #storeHistory=self.storeHistory
             else:
-                self.sol = self.opt(self.optProb, storeHistory=self.storeHistory, sens=self._sens_func)
+                self.sol = self.opt(self.optProb, sens=self._sens_func)
         else:
             if self.timeLimit is not None:
-                self.sol = self.opt(self.optProb, storeHistory=self.storeHistory, timeLimit=self.timeLimit)
+                self.sol = self.opt(self.optProb, timeLimit=self.timeLimit)
             else:
-                self.sol = self.opt(self.optProb, storeHistory=self.storeHistory, sens='FD')
+                self.sol = self.opt(self.optProb, sens='FD')
 
     def parse_opt_vars(self, varDict):
         # self._x = self._unnorm(varDict["x"], self._xmin, self._xmax)
