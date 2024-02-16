@@ -374,7 +374,7 @@ class WPLOInterface():
                     break
 
         # Compute optimal AEP
-        self.post_processing.reinitialize(layout_x=self.solution["opt_x"].flatten(),layout_y=self.solution["opt_y"].flatten())
+        self.post_processing.reinitialize(layout_x=self.solution["opt_x"].flatten(),layout_y=self.solution["opt_y"].flatten(),time_series=False)
         self.post_processing.calculate_wake()
         self._aep_final = np.sum(self.post_processing.get_farm_power() * self._freq_2D * 8760)
         self.solution["opt_aep"] = self._aep_final

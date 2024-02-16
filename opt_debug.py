@@ -5,32 +5,32 @@ import visualization as vis
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
 
-wr = tl.load_wind_rose(8)
-layout_x, layout_y, boundaries = tl.load_layout(0,"small")
+# wr = tl.load_wind_rose(8)
+# layout_x, layout_y, boundaries = tl.load_layout(45,"small")
 
-# wr = tl.load_wind_rose(1)
-# layout_x, layout_y, boundaries = tl.load_layout(0,"medium")
+wr = tl.load_wind_rose(1)
+layout_x, layout_y, boundaries = tl.load_layout(15,"medium")
 
 # wr = tl.load_wind_rose(6)
-# layout_x, layout_y, boundaries = tl.load_layout(0,"large")
+# layout_x, layout_y, boundaries = tl.load_layout(15,"large")
 
 opt = inter.WPLOInterface(wr, layout_x, layout_y, boundaries)
-solution = opt.run_optimization(optimizer="flowers", solver="SNOPT", gradient="numerical", scale=1e3, tol=1e-2, timer=60)
+solution = opt.run_optimization(optimizer="conventional", solver="SNOPT", gradient="numerical", scale=1e3, tol=1e-3, timer=600)
 
 print(solution["init_aep"])
 print(solution["opt_aep"])
 print(solution["total_time"])
 print(solution["iter"])
-print(solution["obj_calls"])
+# print(solution["obj_calls"])
 print("Exit code: " + str(solution["exit_code"]))
 
 vis.plot_optimal_layout(np.array(boundaries), solution["opt_x"],solution["opt_y"],solution["init_x"],solution["init_y"])
 vis.plot_wind_rose(wr)
 
-plt.figure()
-plt.plot(range(solution["iter"]),solution["hist_aep"]/1e9)
-plt.xlabel('Iteration')
-plt.ylabel('AEP [GWh]')
+# plt.figure()
+# plt.plot(range(solution["iter"]),solution["hist_aep"]/1e9)
+# plt.xlabel('Iteration')
+# plt.ylabel('AEP [GWh]')
 
 # fig, ax = plt.subplots(1,1)
 # ax.set(aspect='equal', xlim=[-5,25], ylim=[-5,25], xlabel='x/D', ylabel='y/D')

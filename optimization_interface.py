@@ -47,9 +47,9 @@ class LayoutOptimizer():
         elif solver == "SNOPT":
             self.optOptions = {
                 # "Print file": output_file,
+                # "iSumm": 0,
                 "Summary file": output_file,
                 "iPrint": 0,
-                # "iSumm": 0,
                 "Major optimality tolerance": tol,
                 "Minor optimality tolerance": 1e-4,
                 "Major feasibility tolerance": 1e-4,

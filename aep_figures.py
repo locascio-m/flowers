@@ -10,6 +10,7 @@ import matplotlib.animation as animation
 import matplotlib.collections as coll
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
+from matplotlib.ticker import MultipleLocator
 
 save = False
 dpi = 500
@@ -319,6 +320,14 @@ if save:
 xx, yy, flowers_aep, park_aep, gauss_aep, terms, conv_resolution, wind_rose, X0, Y0, boundary = pickle.load(open('solutions/aep3.p','rb'))
 
 # boundary = np.append(boundary,np.reshape(boundary[:,0],(2,1)),axis=1)
+# cmap = cm.get_cmap('viridis', 256)
+# colors = cmap(np.linspace(0,1,256))
+# colors[-int(0.05*len(colors)):] = [1,0,0,1]
+# cmap_new = co.LinearSegmentedColormap.from_list('cmap_new',colors)
+
+# cmap = co.ListedColormap(['white', 'red'])
+# bounds=[0.94,0.995,1.0]
+# norm = co.BoundaryNorm(bounds, cmap.N)
 
 fig, ax = plt.subplots(3,3,figsize=(11,10))
 
@@ -371,7 +380,13 @@ for i in range(3):
         axx.add_collection(coll1)
         axx.add_collection(coll2)
 
+        # global_sol = np.where(model==1.0)
+
+        # axx.imshow(np.flip(model,axis=0), cmap=cmap, norm=norm, extent=[-1,15,-1,15])
         axx.contour(xx,yy,model,levels=np.linspace(0.94,1.,60,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
+        # axx.contour(xx,yy,model,levels=np.linspace(0.94,1.,60,endpoint=True),cmap=cmap_new,vmin=0.94,vmax=1.)
+        # axx.scatter(xx[global_sol],yy[global_sol],50,color='r',marker='*',zorder=20)
+        # axx.contour(xx,yy,model,levels=[0.99,0.999],colors=["darkred","indianred"])
         axx.set(
             title=label, 
             xlabel='$x/D$', 
@@ -384,9 +399,15 @@ fig.tight_layout()
 fig.subplots_adjust(right=0.9)
 cbar_ax = fig.add_axes([0.9, 0.18, 0.02, 0.637])
 cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=0.94,vmax=1.)),cax=cbar_ax,label='Normalized AEP')
+# cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=0.94,vmax=1.),cmap=cmap_new),cax=cbar_ax,label='Normalized AEP')
+# cmap = cm.get_cmap('Reds_r')
+# cbar_ax.plot([0, 1], [0.99,0.99], linewidth=5, color="darkred")
+# cbar_ax.plot([0, 1], [0.995,0.995], linewidth=5, color="indianred")
+# cbar_ax.set(yticks=[0.94,0.95,0.96,0.97,0.98,0.99,0.995,1.0])
 if save:
     plt.savefig('./figures/aep_smooth.png', dpi=dpi)
 
+# ## Smoothness animation
 # fig3, ax5 = plt.subplots(1,3,figsize=(11,4))
 
 # for i in [0,1,2]:
@@ -406,25 +427,31 @@ if save:
 #     ax5[i].add_collection(coll2)
 
 
-# ax5[0].contour(xx,yy,flowers_aep[-2],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
+# ax5[0].contour(xx,yy,flowers_aep[2],levels=np.linspace(0.94,1.,60,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 # ax5[0].set(
-#     title='FLOWERS: %.0f'%(terms[-2]), 
-#     xlabel='x/D', 
-#     ylabel='y/D',
+#     title='FLOWERS: %.0f'%(terms[2]), 
+#     xlabel='$x/D$', 
+#     ylabel='$y/D$',
+#     xticks=[0,7,14],
+#     yticks=[0,7,14],
 #     aspect='equal'
 # )
-# ax5[1].contour(xx,yy,park_aep[4],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
+# ax5[1].contour(xx,yy,park_aep[0],levels=np.linspace(0.94,1.,60,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 # ax5[1].set(
-#     title='Conventional-Jensen: %.0f'%(conv_resolution[4]) + '$^\circ$', 
-#     xlabel='x/D', 
-#     ylabel='y/D',
+#     title='Conventional-Jensen: %.0f'%(conv_resolution[0]) + '$^\circ$', 
+#     xlabel='$x/D$', 
+#     ylabel='$y/D$',
+#     xticks=[0,7,14],
+#     yticks=[0,7,14],
 #     aspect='equal'
 # )
-# ax5[2].contour(xx,yy,gauss_aep[4],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
+# ax5[2].contour(xx,yy,gauss_aep[1],levels=np.linspace(0.94,1.,60,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 # ax5[2].set(
-#     title='Conventional-Gauss: %.0f'%(conv_resolution[4]) + '$^\circ$', 
-#     xlabel='x/D', 
-#     ylabel='y/D',
+#     title='Conventional-Gauss: %.0f'%(conv_resolution[1]) + '$^\circ$', 
+#     xlabel='$x/D$', 
+#     ylabel='$y/D$',
+#     xticks=[0,7,14],
+#     yticks=[0,7,14],
 #     aspect='equal'
 # )
 # fig3.tight_layout()
@@ -432,7 +459,7 @@ if save:
 # cbar_ax = fig3.add_axes([0.88, 0.205, 0.02, 0.62])
 # cbar = plt.colorbar(cm.ScalarMappable(norm=co.Normalize(vmin=0.94,vmax=1.)),cax=cbar_ax,label='Normalized AEP')
 # if save:
-#     plt.savefig('./figures/aep_smooth.png', dpi=dpi)
+#     plt.savefig('./figures/aep_smooth_single.png', dpi=dpi)
 
 # fig2, ax4 = plt.subplots(1,3,figsize=(11,4))
 
@@ -452,25 +479,31 @@ if save:
 #     ax4[i].add_collection(coll1)
 #     ax4[i].add_collection(coll2)
 
-# ax4[0].contour(xx,yy,flowers_aep[-1],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
+# ax4[0].contour(xx,yy,flowers_aep[-1],levels=np.linspace(0.94,1.,60,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 # ax4[0].set(
 #     title='FLOWERS: %.0f'%(terms[-1]), 
-#     xlabel='x/D', 
-#     ylabel='y/D',
+#     xlabel='$x/D$', 
+#     ylabel='$y/D$',
+#     xticks=[0,7,14],
+#     yticks=[0,7,14],
 #     aspect='equal'
 # )
-# ax4[1].contour(xx,yy,park_aep[-1],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
+# ax4[1].contour(xx,yy,park_aep[-1],levels=np.linspace(0.94,1.,60,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 # ax4[1].set(
 #     title='Conventional-Jensen: %.0f'%(conv_resolution[-1]) + '$^\circ$', 
-#     xlabel='x/D', 
-#     ylabel='y/D',
+#     xlabel='$x/D$', 
+#     ylabel='$y/D$',
+#     xticks=[0,7,14],
+#     yticks=[0,7,14],
 #     aspect='equal'
 # )
-# ax4[2].contour(xx,yy,gauss_aep[-1],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
+# ax4[2].contour(xx,yy,gauss_aep[-1],levels=np.linspace(0.94,1.,60,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 # ax4[2].set(
 #     title='Conventional-Gauss: %.0f'%(conv_resolution[-1]) + '$^\circ$', 
-#     xlabel='x/D', 
-#     ylabel='y/D',
+#     xlabel='$x/D$', 
+#     ylabel='$y/D$',
+#     xticks=[0,7,14],
+#     yticks=[0,7,14],
 #     aspect='equal'
 # )
 # fig2.tight_layout()
@@ -502,27 +535,112 @@ if save:
 #     ax4[0].contour(xx,yy,flowers_aep[-1-i],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 #     ax4[0].set(
 #         title='FLOWERS: %.0f'%(terms[-1-i]), 
-#         xlabel='x/D', 
-#         ylabel='y/D',
+#         xlabel='$x/D$', 
+#         ylabel='$y/D$',
+#         xticks=[0,7,14],
+#         yticks=[0,7,14],
 #         aspect='equal'
 #     )
 #     ax4[1].contour(xx,yy,park_aep[-1-i],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 #     ax4[1].set(
 #         title='Conventional-Jensen: %.0f'%(conv_resolution[-1-i]) + '$^\circ$', 
-#         xlabel='x/D', 
-#         ylabel='y/D',
+#         xlabel='$x/D$', 
+#         ylabel='$y/D$',
+#         xticks=[0,7,14],
+#         yticks=[0,7,14],
 #         aspect='equal'
 #     )
 #     ax4[2].contour(xx,yy,gauss_aep[-1-i],levels=np.linspace(0.94,1.,50,endpoint=True),cmap='viridis',vmin=0.94,vmax=1.)
 #     ax4[2].set(
 #         title='Conventional-Gauss: %.0f'%(conv_resolution[-1-i]) + '$^\circ$', 
-#         xlabel='x/D', 
-#         ylabel='y/D',
+#         xlabel='$x/D$', 
+#         ylabel='$y/D$',
+#         xticks=[0,7,14],
+#         yticks=[0,7,14],
 #         aspect='equal'
 #     )
 
-# mov2 = animation.FuncAnimation(fig2, animate2, interval=1000, frames=len(conv_resolution), repeat=True)
+# mov2 = animation.FuncAnimation(fig2, animate2, interval=1500, frames=len(conv_resolution), repeat=True)
 # if save:
 #     mov2.save('./figures/aep_smooth.gif', dpi=dpi, bitrate=500)
+    
+###########################################################################
+# LAYOUT OPTIMIZATION CASE STUDY
+###########################################################################
+solution_flowers, wr, boundaries = pickle.load(open('solutions/aep_layout_flowers.p','rb'))
+solution_jensen, _, _ = pickle.load(open('solutions/aep_layout_jensen.p','rb'))
+solution_gauss, _, _ = pickle.load(open('solutions/aep_layout_gauss.p','rb'))
+
+boundaries /= 126.
+boundaries = np.append(boundaries,np.reshape(boundaries[:,0],(2,1)),axis=1)
+
+fig, ax = plt.subplots(1,3,figsize=(11,4.5))
+
+layout_init = []
+layout_final = []
+for i in range(len(solution_flowers['opt_x'])):
+    layout_init.append(plt.Circle((solution_flowers['init_x'][i]/126., solution_flowers['init_y'][i]/126.), 1/2))
+    layout_final.append(plt.Circle((solution_flowers['opt_x'][i]/126., solution_flowers['opt_y'][i]/126.), 1/2))
+
+tmp0 = plt.Circle(([],[]),1/2,color='r',label='Initial Layout')
+tmp1 = plt.Circle(([],[]),1/2,color='tab:blue',label='Optimal Layout')
+
+layout0 = coll.PatchCollection(layout_init, color='r')
+layout1 = coll.PatchCollection(layout_final, color='tab:blue',zorder=2)
+# ax[0].add_collection(layout0)
+ax[0].add_collection(layout1)
+ax[0].plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+ax[0].set(xlabel='$x/D$', ylabel='$y/D$', aspect='equal',title='FLOWERS',xticks=[0,7,14],yticks=[0,7,14])
+ax[0].grid(linestyle=':',which='both')
+ax[0].xaxis.set_minor_locator(MultipleLocator(1))
+ax[0].yaxis.set_minor_locator(MultipleLocator(1))
+
+layout_init = []
+layout_final = []
+for i in range(len(solution_flowers['opt_x'])):
+    layout_init.append(plt.Circle((solution_jensen['init_x'][i]/126., solution_jensen['init_y'][i]/126.), 1/2))
+    layout_final.append(plt.Circle((solution_jensen['opt_x'][i]/126., solution_jensen['opt_y'][i]/126.), 1/2))
+
+tmp0 = plt.Circle(([],[]),1/2,color='r',label='Initial Layout')
+tmp1 = plt.Circle(([],[]),1/2,color='tab:orange',label='Optimal Layout')
+
+layout0 = coll.PatchCollection(layout_init, color='r')
+layout1 = coll.PatchCollection(layout_final, color='tab:orange',zorder=2)
+# ax[1].add_collection(layout0)
+ax[1].add_collection(layout1)
+ax[1].plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+ax[1].set(xlabel='$x/D$', ylabel='$y/D$', aspect='equal',title='Conventional-Jensen',xticks=[0,7,14],yticks=[0,7,14])
+ax[1].grid(linestyle=':',which='both')
+ax[1].xaxis.set_minor_locator(MultipleLocator(1))
+ax[1].yaxis.set_minor_locator(MultipleLocator(1))
+
+layout_init = []
+layout_final = []
+plt.minorticks_on()
+for i in range(len(solution_flowers['opt_x'])):
+    layout_init.append(plt.Circle((solution_gauss['init_x'][i]/126., solution_gauss['init_y'][i]/126.), 1/2))
+    layout_final.append(plt.Circle((solution_gauss['opt_x'][i]/126., solution_gauss['opt_y'][i]/126.), 1/2))
+
+tmp0 = plt.Circle(([],[]),1/2,color='r',label='Initial Layout')
+tmp1 = plt.Circle(([],[]),1/2,color='tab:green',label='Optimal Layout')
+
+layout0 = coll.PatchCollection(layout_init, color='r')
+layout1 = coll.PatchCollection(layout_final, color='tab:green',zorder=2)
+# ax[2].add_collection(layout0)
+ax[2].add_collection(layout1)
+ax[2].plot(boundaries[0],boundaries[1],color='k',linewidth=2,zorder=1)
+ax[2].set(xlabel='$x/D$', ylabel='$y/D$', aspect='equal',title='Conventional-Gauss',xticks=[0,7,14],yticks=[0,7,14])
+ax[2].grid(linestyle=':',which='both')
+ax[2].xaxis.set_minor_locator(MultipleLocator(1))
+ax[2].yaxis.set_minor_locator(MultipleLocator(1))
+# ax.legend(handles=[tmp0,tmp1],loc='upper right')
+fig.tight_layout()
+
+if save:
+    plt.savefig('./figures/aep_layout.png', dpi=dpi)
+
+print("FLOWERS Time: {:.2f}".format(solution_flowers['total_time']))
+print("Jensen Time: {:.2f}".format(solution_jensen['total_time']))
+print("Gauss Time: {:.2f}".format(solution_gauss['total_time']))
 
 plt.show()
