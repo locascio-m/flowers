@@ -25,3 +25,7 @@ case48_floris.csv
 /figures
 schematics.py
 /.vscode
+wr_fourier.p
+wr_fourier2.p
+opt_figures_old.py
+defense_figures.py
