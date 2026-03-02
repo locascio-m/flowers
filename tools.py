@@ -5,6 +5,7 @@
 import numpy as np
 import pandas as pd
 from shapely.geometry import Polygon, Point
+import pickle
 
 import floris.tools.wind_rose as rose
 
@@ -46,8 +47,8 @@ def random_layout(boundaries=[], n_turb=0, D=126.0, min_dist=2.0, idx=None):
     if idx != None:
         np.random.seed(idx)
 
-    xx = np.zeros(n_turb)
-    yy = np.zeros(n_turb)
+    xx = -1000*np.ones(n_turb)
+    yy = -1000*np.ones(n_turb)
 
     xmin = np.min([tup[0] for tup in boundaries])
     xmax = np.max([tup[0] for tup in boundaries])
@@ -104,9 +105,10 @@ def discrete_layout(n_turb=0, D=126.0, min_dist=3.0, idx=None, spacing=False):
     yy = np.zeros(n_turb)
 
     # Indices of discrete grid
-    s = n_turb + 1
-    x_idx = np.random.randint(0,s,n_turb)
-    y_idx = np.random.randint(0,s,n_turb)
+    sx = n_turb + 1
+    sy = 6
+    x_idx = np.random.randint(0,sx,n_turb)
+    y_idx = np.random.randint(0,sy,n_turb)
     pts = [(x_idx[i],y_idx[i]) for i in range(n_turb)]
     while len(np.unique(pts)) < len(pts):
         tmp = np.unique(pts)
@@ -114,8 +116,8 @@ def discrete_layout(n_turb=0, D=126.0, min_dist=3.0, idx=None, spacing=False):
         for i in range(n_turb):
             if i not in tmp:
                 new_set.append(i)
-        x_idx[new_set] = np.random.randint(0,s,len(new_set))
-        y_idx[new_set] = np.random.randint(0,s,len(new_set))
+        x_idx[new_set] = np.random.randint(0,sx,len(new_set))
+        y_idx[new_set] = np.random.randint(0,sy,len(new_set))
         pts = [(x_idx[i],y_idx[i]) for i in range(n_turb)]
 
     # Check that all combinations of x,y are unique
@@ -133,102 +135,12 @@ def discrete_layout(n_turb=0, D=126.0, min_dist=3.0, idx=None, spacing=False):
     else:
         return xx, yy
 
-def load_layout(name, boundaries=False):
-    """
-    TODO: fill in description
+def load_layout(idx, case, boundaries=True):
+    file = './layouts/' + case + str(idx) + '.p'
+    layout_x, layout_y, boundaries = pickle.load(open(file,'rb'))
 
-    """
-
-    if name == "iea":
-        layout_x = np.array([
-            2714.43,
-            2416.08,
-            1496.75,
-            1860.65,
-            2224.55,
-            2588.45,
-            1197.40,
-            1619.09,
-            2040.78,
-            2462.46,
-            898.05,
-            1257.66,
-            1617.27,
-            1976.87,
-            2336.48,
-            598.70,
-            1001.65,
-            1404.60,
-            1807.55,
-            2210.50,
-            299.35,
-            750.21,
-            1201.07,
-            1651.93,
-            2102.79,
-            0.00,
-            415.30,
-            830.59,
-            1245.88,
-            1661.18,
-            2076.47,
-            ])
-        layout_y = np.array([
-            4042.95,
-            3932.63,
-            4020.72,
-            3803.55,
-            3586.38,
-            3369.22,
-            3618.82,
-            3311.04,
-            3003.27,
-            2695.49,
-            3216.92,
-            2918.13,
-            2619.34,
-            2320.55,
-            2021.76,
-            2815.01,
-            2448.27,
-            2081.53,
-            1714.78,
-            1348.04,
-            2413.11,
-            1977.72,
-            1542.33,
-            1106.94,
-            671.55,
-            2011.21,
-            1608.97,
-            1206.72,
-            804.48,
-            402.24,
-            0.00,
-        ])
-        bound = [
-            (2714.4, 4049.4),
-            (2132.7, 938.8),
-            (2092.8, 591.6),
-            (2078.9, 317.3),
-            (2076.1, 148.5),
-            (2076.6, 0.0),
-            (2076.5, 6.5),
-            (1208.6, 847.0),
-            (0.0, 2017.7),
-            (1496.7, 4027.2),
-            (1531.8, 4006.2),
-            (1931.2, 3818.5),
-            (2058.3, 3783.6),
-            (2192.8, 3792.9),
-            (2316.8, 3846.4),
-            (2416.0, 3939.1),
-            (2528.6, 4089.0),
-            (2550.9, 4126.3)
-        ]
-    
     if boundaries:
-        return layout_x, layout_y, bound
+        return layout_x, layout_y, boundaries
     else:
         return layout_x, layout_y
 

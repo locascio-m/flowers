@@ -1,29 +1,46 @@
 import model_interface as inter
 import numpy as np
+import sys
 import tools as tl
 import pickle
 
-idx = 0
-model = "conventional"
-gradients = "numerical"
+idx = int(sys.argv[4])
+farm = str(sys.argv[3])
+model = str(sys.argv[1])
+gradients = str(sys.argv[2])
 
-wr = tl.load_wind_rose(1)
-boundaries = [(3*126., 0.),(12*126, 0.),(15*126, 10*126.),(10*126, 15*126.),(0, 15*126.)]
-file_base = 'solutions/opt_floris'
+tol = 1e-3
+if farm == "small":
+    wr = tl.load_wind_rose(8)
+    if model == "flowers":
+        scale = 1e2
+    elif model == "conventional":
+        scale = 1e3
+elif farm == "medium":
+    wr = tl.load_wind_rose(1)
+    if model == "flowers":
+        scale = 1e2
+    elif model == "conventional":
+        scale = 1e3
+elif farm == "large":
+    wr = tl.load_wind_rose(6)
+    if model == "flowers":
+        scale = 1e3
+    elif model == "conventional":
+        scale = 1e4
+
+layout_x, layout_y, boundaries = tl.load_layout(idx, farm)
+
+file_base = 'solutions/opt_' + farm + '_' + model + '_' + gradients + '_'
 
 save_file = file_base + str(idx) + '.p'
-history_file = file_base + str(idx) + '.hist'
+# history_file = file_base + str(idx) + '.hist'
 output_file = file_base + str(idx) + '.out'
 
-layout_x, layout_y = tl.random_layout(boundaries, n_turb=20, idx=idx)
 opt = inter.WPLOInterface(wr, layout_x, layout_y, boundaries)
 
-solution = opt.run_optimization(optimizer=model, solver="SNOPT", gradient=gradients, timer=600, history=history_file, output=output_file)
+solution = opt.run_optimization(optimizer=model, solver="SNOPT", gradient=gradients, scale=scale, tol=tol, timer=86400, output=output_file)
 
 boundaries = np.array(boundaries).T
 
-print(solution['init_aep'])
-print(solution['opt_aep'])
-print(solution['total_time'])
-print(solution['iter'])
-# pickle.dump((solution, wr, boundaries), open(save_file,'wb'))
+pickle.dump((solution, wr, boundaries), open(save_file,'wb'))
