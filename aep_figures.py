@@ -12,7 +12,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
 from matplotlib.ticker import MultipleLocator
 
-save = True
+save = False
 dpi = 600
 # plt.rcParams['figure.dpi'] = 150
 # Formatting
